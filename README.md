@@ -8,3 +8,13 @@ Class data is updated every 5 minutes during registration period, and daily outs
 <h1>Options</h1>
 <h3>Note: This list is subject to change as the application develops. New feature requests are welcome.</h3>
 
+Note that it is possible to have no resulting schedules based on paramters that are either too restrictive, or due to sections of a class being closed. If the application cannot find any matching schedules, try adjusting your options.
+
+<h4>Current options (v1.0):</h5>
+<ul>
+  <li>Filters out time conflicts between sections</li>
+  <li>Restricts based on start and end times (e.g., no classes before 10am or after 5pm)</li>
+  <li>Filters out schedules with classes on certain days</li>
+  <li>Will prioritize schedules with specified professor(s) and not display schedules with undesired professor(s)</li>
+</ul>
+
