@@ -18,3 +18,7 @@ Note that it is possible to have no resulting schedules based on paramters that 
   <li>Will prioritize schedules with specified professor(s) and not display schedules with undesired professor(s)</li>
 </ul>
 
+<h4>Planned future features</h4>
+<ul>
+    <li>Plan around user-specified time blocks, such as sports/music practice, part-time job, etc.</li>
+    <li>Prioritize schedules that minimize running around campus (e.g., if you have 2 classes that are in the same building, try to make them back-to-back. Work your way across campus, etc.)</li>
