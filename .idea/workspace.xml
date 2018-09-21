@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f299f5f1-40a7-4965-816d-7031af7c4852" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/lambda/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lambda/modules/classtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/lambda/modules/classtime.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lambda/modules/section.js" beforeDir="false" afterPath="$PROJECT_DIR$/lambda/modules/section.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lambda/server.js" beforeDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />
@@ -35,13 +35,13 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="js" value="5112" />
+          <entry key="js" value="5345" />
           <entry key="txt" value="70" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JavaScript" value="5112" />
+          <entry key="JavaScript" value="5345" />
           <entry key="PLAIN_TEXT" value="70" />
         </counts>
       </usages-collector>
@@ -77,10 +77,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/lambda/server.js">
+        <entry file="file://$PROJECT_DIR$/lambda/index.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="34">
-              <caret line="2" column="46" selection-start-line="2" selection-start-column="46" selection-end-line="2" selection-end-column="46" />
+            <state relative-caret-position="-306">
+              <caret line="3" column="46" selection-start-line="3" selection-start-column="46" selection-end-line="3" selection-end-column="46" />
             </state>
           </provider>
         </entry>
@@ -100,10 +100,11 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/lambda/server.js" />
         <option value="$PROJECT_DIR$/lambda/modules/course.js" />
         <option value="$PROJECT_DIR$/lambda/modules/section.js" />
         <option value="$PROJECT_DIR$/lambda/modules/classtime.js" />
+        <option value="$PROJECT_DIR$/lambda/server.js" />
+        <option value="$PROJECT_DIR$/lambda/index.js" />
       </list>
     </option>
   </component>
@@ -176,7 +177,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1537541728993</updated>
-      <workItem from="1537541732027" duration="13840000" />
+      <workItem from="1537541732027" duration="14876000" />
     </task>
     <task id="LOCAL-00001" summary="Ported ClassTime and Course classes from C#.">
       <created>1537550864857</created>
@@ -189,7 +190,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="13840000" />
+    <option name="totallyTimeSpent" value="14876000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-6" y="-6" width="1633" height="1053" extended-state="6" />
@@ -247,10 +248,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lambda/server.js">
+    <entry file="file://$PROJECT_DIR$/lambda/index.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="46" selection-start-line="2" selection-start-column="46" selection-end-line="2" selection-end-column="46" />
+        <state relative-caret-position="-306">
+          <caret line="3" column="46" selection-start-line="3" selection-start-column="46" selection-end-line="3" selection-end-column="46" />
         </state>
       </provider>
     </entry>
