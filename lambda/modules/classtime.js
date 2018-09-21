@@ -20,13 +20,13 @@ class ClassTime{
         return date;
     }
 
-    //Takes 2 ClassTime objects and sees if they have any days in common
+    //Takes 2 ClassTime objects and returns whether they have any days in common
     static onSameDay(class1, class2){
         var combined = class1.days + class2.days; //Add all of the characters together
         return (/([a-zA-Z]).*?\1/).test(combined); //Regex will match any duplicates
     }
 
-    //Takes 2 ClassTime objects and sees if they have a time conflict
+    //Takes 2 ClassTime objects and returns whether they have a time conflict
     static hasTimeConflict(class1, class2){
         if (!ClassTime.onSameDay(class1, class2)){ //If both classes are not on the same day, we don't need to check the times
             return false;
