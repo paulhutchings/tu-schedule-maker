@@ -36,4 +36,5 @@ The data for creating structures is broken down into 3 main classes:
 </ul>
 
 The structure for the data is outlined using the diagram below. Note that a Section may or may not contain a Lab/Recitation ClassTime object.
-<img scrc="https://i.imgur.com/iPRAIsz.png">
+
+<img src="https://i.imgur.com/iPRAIsz.png">
