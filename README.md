@@ -26,9 +26,9 @@ Note that it is possible to have no resulting schedules based on paramters that 
 
 The data for creating structures is broken down into 3 main classes:
 <ul>
-  <li>Course - Represents a single course, that has a name (e.g., MATH 1041), title (e.g., Calculus I), and a List of Section objects representing all of the sections available for that course.</li>
-  <li>Section - Represents a section of a course. This contains the Course Registration Number (CRN), and one or more ClassTime objects, representing the lecture and lab/recitation, if applicable.</li>
-  <li>ClassTime - Represents either a lecture or lab/recitation meeting time. Contains the days the class meets, the start and end times, the location, and the instructor.</li>
+  <li><b>Course</b> - Represents a single course, that has a name (e.g., MATH 1041), title (e.g., Calculus I), and a List of Section objects representing all of the sections available for that course.</li>
+  <li><b>Section</b> - Represents a section of a course. This contains the Course Registration Number (CRN), and one or more ClassTime objects, representing the lecture and lab/recitation, if applicable.</li>
+  <li><b>ClassTime</b> - Represents either a lecture or lab/recitation meeting time. Contains the days the class meets, the start and end times, the location, and the instructor.</li>
 </ul>
 
 The structure for the data is outlined using the diagram below. Note that a Section may or may not contain a Lab/Recitation ClassTime object.
