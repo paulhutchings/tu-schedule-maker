@@ -12,6 +12,7 @@ Note that it is possible to have no resulting schedules based on parameters that
 <ul>
   <li>Filters out time conflicts between sections</li>
   <li>Restricts based on start and end times (e.g., no classes before 10am or after 5pm)</li>
+  <li>Set the maximum number of classes per day</li>
   <li>Filters out schedules with classes on certain days</li>
   <li>Will prioritize schedules with specified professor(s) and not display schedules with undesired professor(s)</li>
 </ul>
