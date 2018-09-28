@@ -63,19 +63,38 @@ function parseEntry(text){
 
 //Gets the associated data table for the given entry element
 function getTable(html, element){
-    return html(element.parent.parent.next.next).find('table.datadisplaytable tr');
+    return html(element
+        .parent
+        .parent
+        .next
+        .next)
+        .find('table.datadisplaytable tr');
 }
 
 //Creates a new ClassTime object given a data table element and the index of the row of the table to extract the data from
 function createClassTime(table, index){
     var path = `tr:nth-child(${index}) td.dddefault:nth-child`;
-    var times = parseTime(table.find(`${path}(2)`).text().trim().split(' - '));
+    var times = parseTime(table
+        .find(`${path}(2)`)
+        .text()
+        .trim()
+        .split(' - '));
     var startTime = times[0];
     var endTime = times[1]; 
-    var days = table.find(`${path}(3)`).text().trim();
-    var location = table.find(`${path}(4)`).text().trim();
-    var building = location === "TBA" ? null : location.slice(0, location.lastIndexOf(' '));
-    var instructor = cleanInsString(table.find(`${path}(7)`).text());
+    var days = table
+        .find(`${path}(3)`)
+        .text()
+        .trim();
+    var location = table
+        .find(`${path}(4)`)
+        .text()
+        .trim();
+    var building = location === "TBA" ? null : location
+    .slice(0, location
+        .lastIndexOf(' '));
+    var instructor = cleanInsString(table
+        .find(`${path}(7)`)
+        .text());
     
     return new ClassTime(days, startTime, endTime, instructor, location, building);
 }
