@@ -1,17 +1,10 @@
 import * as ClassTime from "./classtime";
 
 class Section{
-    constructor(crn, lecture, labrec){
+    constructor(crn, classtimes){
         this.crn = crn;
-        if (arguments.length === 3){
-            this.classtimes = [lecture, labrec];
-            this.hasLabRec =  true;
-        }
-        else {
-            this.classtimes = [lecture];
-            this.hasLabRec = false; 
-        }
-                   
+        this.classtimes = classtimes;
+        this.hasLabRec = this.classtimes.length > 1 ? true : false;                  
     }
 
     //Takes in 2 Section objects and returns whether or not they have any days in common
