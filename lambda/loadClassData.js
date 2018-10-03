@@ -3,35 +3,158 @@
 // import * as Course from "./modules/course"
 
 const fs = require('fs');
+const https = require('https');
+const queryString = require('querystring');
 const cheerio = require('cheerio');
-var courses = new Map();
+const process = require('process');
 
-console.log('Reading file');
-fs.readFile('./classes.html', 'UTF-8', function(err, data){
+//MAIN
+
+console.log('Loading subjects...');
+
+//Read the subjects from the file created by updateSubjects
+fs.readFile('subjects.json', 'UTF-8', (err, data) => {
     if (err) console.log(err);
+
+    //Take the subjects loaded from the file and create the request headers, body, and options
+    //Send the POST request to the server to get the class data
+    sendPost(createReqParams(JSON.parse(data)));
+});
+
+//MAIN FUNCTIONS
+
+//Encapsulates the POST request
+function sendPost(params){
+    var options = params[0];
+    var postData = params[1];   
+    
+    //Start timing how long the response takes
+    var resStart = process.hrtime();
+    console.log('Sending POST request...');
+    const req = https.request(options, (res) => {
+        //Print status, headers, and set response encoding
+        console.log('Response recieved');
+        console.log(`STATUS: ${res.statusCode}`);
+        console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+        res.setEncoding('UTF-8');
+    
+        //Variable to store response
+        var resData = '';
+        res.on('data', (chunk) => {
+            // console.log(chunk);
+            resData += chunk;
+        });
+        res.on('end', () => {
+            //Log end time of response
+            var resEnd = process.hrtime(resStart);
+            console.log('Request complete');
+            console.log(`Response took ${resEnd[0] / 60}m, ${resEnd[0] % 60}s`);
+
+            //Get the class data from the HTML
+            extract(resData);
+        });
+    });
+        
+    //Log any errors
+    req.on('error', (err) => {
+        console.error(`Problem with request: ${err}`);
+    });
+        
+    //Write data to request body
+    req.write(postData);
+    req.end();
+}
+
+//Encapsulates the main processing functions
+function extract(data){
+    //Log start time of HTML processing
+    var procStart = process.hrtime();
+    var courses = new Map();
+
+    const selector = 'table.datadisplaytable th.ddtitle a';
 
     console.log('Loading HTML...');
     const html = cheerio.load(data);
-    console.log('HTML loaded, querying DOM...');
-    var listings = html('table.datadisplaytable th.ddtitle a');  
-    console.log('Query complete, creating sections...');
-    listings.each((i, element) => createSection(html, element));
-    console.log('Section creation complete, writing to file...');
-    courses.forEach(x => {
-        //console.log(x);
-        fs.appendFile('classes.json', `${JSON.stringify(x)}\n\n`, "UTF-8", function(err){
-            if (err) {
-                console.log(err);
-            }
-        });
-    });
-    console.log("File saved");
-});
 
-//HELPER FUNCTIONS
+    console.log('HTML loaded, querying DOM...');
+    var listings = html(selector);  
+
+    console.log('Query complete, creating sections...');
+    listings.each((i, element) => createSection(html, element, courses));
+    console.log(courses.size);
+    console.log('Section creation complete, writing to file...');
+    fs.writeFile('./test/classes.json', `${JSON.stringify(Array.from(courses.values()))}`, 'UTF-8', (err) => {
+        if (err) console.log(err);
+    });
+
+    console.log("File saved");
+    //Log the end time of the processing
+    var procEnd = process.hrtime(procStart);
+    console.log(`Processing took ${procEnd[0]}s ${procEnd[1] / 1000000}ms`);
+    console.log('Complete');
+}
+
+//TESTING
+
+//Use HTML file for testing purposes since HTTP request takes several minutes
+// console.log('Reading file');
+// fs.readFile('./test/classes.html', 'UTF-8', function(err, data){
+//     if (err) console.log(err);
+
+//     extract(data);    
+// });
+
+//UTILITY FUNCTIONS
+
+//Creates the headers, request body, and options
+function createReqParams(subjects){
+    const URL = 'https://prd-wlssb.temple.edu/prod8/bwckschd.p_get_crse_unsec';
+    const host = 'prd-wlssb.temple.edu';
+    const path = '/prod8/bwckschd.p_get_crse_unsec';
+    const term = 201836;
+
+    const body = queryString.stringify({
+        term_in: term,
+        sel_subj: subjects,
+        sel_day: 'dummy',
+        sel_schd: 'dummy',
+        sel_insm: ['dummy', '%'],
+        sel_camp: ['dummy', '%'],
+        sel_levl: 'dummy',
+        sel_sess: ['dummy', '%'],
+        sel_instr: ['dummy', '%'],   
+        sel_ptrm: ['dummy', '%'],
+        sel_attr: ['dummy', '%'],
+        sel_divs: ['dummy', '%'],
+        sel_crse: '',
+        sel_title: '',
+        sel_from_cred: '',
+        sel_to_cred: '',
+        begin_hh: 0,
+        begin_mi: 0,
+        begin_ap: 'a',
+        end_hh: 0,
+        end_mi: 0,
+        end_ap: 'a'  
+    });
+    
+    const headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': URL
+    }
+    
+    const options = {
+        hostname: host,
+        path: path,
+        method: 'POST',
+        headers: headers
+    }
+
+    return [options, body];
+}
 
 //Creates a new section for a course given the entry row and the document
-function createSection(html, element){
+function createSection(html, element, courses){
     var rowItems = parseEntry(html(element).text());
     var name = rowItems[0];
     var title = rowItems[1];
@@ -73,27 +196,29 @@ function getTable(html, element){
 
 //Creates a new ClassTime object given a data table element and the index of the row of the table to extract the data from
 function createClassTime(table, index){
-    var path = `tr:nth-child(${index}) td.dddefault:nth-child`;
+    const selector = `tr:nth-child(${index}) td.dddefault:nth-child`;
+
     var times = parseTime(table
-        .find(`${path}(2)`)
+        .find(`${selector}(2)`)
         .text()
         .trim()
-        .split(' - '));
+        .split(' - '));       
     var startTime = times[0];
     var endTime = times[1]; 
+
     var days = table
-        .find(`${path}(3)`)
+        .find(`${selector}(3)`)
         .text()
         .trim();
     var location = table
-        .find(`${path}(4)`)
+        .find(`${selector}(4)`)
         .text()
         .trim();
     var building = location === "TBA" ? null : location
-    .slice(0, location
-        .lastIndexOf(' '));
+        .slice(0, location
+            .lastIndexOf(' '));
     var instructor = cleanInsString(table
-        .find(`${path}(7)`)
+        .find(`${selector}(7)`)
         .text());
     
     return new ClassTime(days, startTime, endTime, instructor, location, building);
@@ -102,9 +227,9 @@ function createClassTime(table, index){
 //Cleans up the Instructor field string
 function cleanInsString(str){
     return str.replace(/\s+/g, ' ')
-    .replace("( P)", '')
-    .replace(/\s+,/g, ',')
-    .trim();
+        .replace("(P)", '')
+        .replace(/\s+,/g, ',')
+        .trim();
 }
 
 //Takes the array of time strings from the tie column, and converts each to a 24 hour format number
