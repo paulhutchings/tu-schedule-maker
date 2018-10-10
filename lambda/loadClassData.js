@@ -83,15 +83,45 @@ function extract(data){
     listings.each((i, element) => createSection(html, element, courses));
     console.log(courses.size);
     console.log('Section creation complete, writing to file...');
-    fs.writeFile('./test/classes.json', `${JSON.stringify(Array.from(courses.values()))}`, 'UTF-8', (err) => {
-        if (err) console.log(err);
-    });
 
-    console.log("File saved");
+    // fs.writeFile('./test/classes.json', `${JSON.stringify(Array.from(courses.values()))}`, 'UTF-8', (err) => {
+    //     if (err) console.log(err);
+    // });
+
+    // console.log("File saved");
     //Log the end time of the processing
     var procEnd = process.hrtime(procStart);
     console.log(`Processing took ${procEnd[0]}s ${procEnd[1] / 1000000}ms`);
-    console.log('Complete');
+
+    console.log('Sending put to AWS...');
+    const opt = {
+        hostname: "62xcf1gi98.execute-api.us-east-2.amazonaws.com",
+        path: "/test/TUScheduleMakerTest",
+        method: 'PUT'
+    }
+    
+    courses.forEach(x => {
+        const dbreq = https.request(opt, (res) => {
+            //Print status, headers, and set response encoding
+            console.log('Response recieved');
+            console.log(`STATUS: ${res.statusCode}`);
+            console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+            res.setEncoding('UTF-8');
+    
+            //Log any errors
+            dbreq.on('error', (err) => {
+                console.error(`Problem with request: ${err}`);
+            });
+            
+            var body = JSON.stringify(x);
+            body += JSON.stringify("TableName: tusm-test");
+    
+            //Write data to request body
+            dbreq.write(body);
+            dbreq.end();
+        });
+    });
+    
 }
 
 //TESTING
@@ -111,7 +141,7 @@ function createReqParams(subjects){
     const URL = 'https://prd-wlssb.temple.edu/prod8/bwckschd.p_get_crse_unsec';
     const host = 'prd-wlssb.temple.edu';
     const path = '/prod8/bwckschd.p_get_crse_unsec';
-    const term = 201836;
+    const term = 201903;
 
     const body = queryString.stringify({
         term_in: term,
