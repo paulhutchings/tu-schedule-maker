@@ -38,5 +38,5 @@ The structure for the data is outlined using the diagram below. Note that a Sect
 
 <h1>Operation</h1>
 
-Class data is loaded from the <a href="https://prd-wlssb.temple.edu/prod8/bwckschd.p_disp_dyn_sched">public search page</a> and parsed into a DynamoDB table on AWS. S3 hosts the front-end page and Lambda in conjunction with the API Gateway are utilized for backend processing.
+Class data is loaded from the public search page and parsed into a DynamoDB table on AWS. S3 hosts the front-end page and Lambda in conjunction with the API Gateway are utilized for backend processing.
 
