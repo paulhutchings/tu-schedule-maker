@@ -8,7 +8,6 @@ class Course{
     addSection(section) {
         this.sections.push(section);
     }
-
 }
 
 module.exports = Course;

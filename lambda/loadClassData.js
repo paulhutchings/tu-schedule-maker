@@ -2,24 +2,29 @@
 // import * as Section from "./modules/section"
 // import * as Course from "./modules/course"
 
-const fs = require('fs');
-const https = require('https');
+const FS = require('fs');
+const HTTPS = require('https');
 const queryString = require('querystring');
-const cheerio = require('cheerio');
-const process = require('process');
+const CHEERIO = require('cheerio');
+const PROCESS = require('process');
+const AWS = require('aws-sdk');
+const DOC_CLIENT = new AWS.DynamoDB.DocumentClient();
 
 //MAIN
 
-console.log('Loading subjects...');
+exports.handler = () => {
+    console.log('Loading subjects...');
 
-//Read the subjects from the file created by updateSubjects
-fs.readFile('subjects.json', 'UTF-8', (err, data) => {
-    if (err) console.log(err);
-
-    //Take the subjects loaded from the file and create the request headers, body, and options
-    //Send the POST request to the server to get the class data
-    sendPost(createReqParams(JSON.parse(data)));
-});
+    //Read the subjects from the database
+    var params = {
+        TableName: 'subjects-test'
+    };
+    DOC_CLIENT.scan(params, (err, data) => {
+        if (err) console.log(err);
+    
+        sendPost(createReqParams(data.Items));
+    });
+};
 
 //MAIN FUNCTIONS
 
@@ -29,110 +34,108 @@ function sendPost(params){
     var postData = params[1];   
     
     //Start timing how long the response takes
-    var resStart = process.hrtime();
+    var resStart = PROCESS.hrtime();
     console.log('Sending POST request...');
-    const req = https.request(options, (res) => {
+    const req = HTTPS.request(options, (res) => {
         //Print status, headers, and set response encoding
         console.log('Response recieved');
         console.log(`STATUS: ${res.statusCode}`);
-        console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
         res.setEncoding('UTF-8');
     
         //Variable to store response
-        var resData = '';
+        var resBody = '';
         res.on('data', (chunk) => {
             // console.log(chunk);
-            resData += chunk;
+            resBody += chunk;
         });
+
         res.on('end', () => {
             //Log end time of response
-            var resEnd = process.hrtime(resStart);
+            var resEnd = PROCESS.hrtime(resStart);
             console.log('Request complete');
             console.log(`Response took ${resEnd[0] / 60}m, ${resEnd[0] % 60}s`);
 
             //Get the class data from the HTML
-            extract(resData);
+            extract(resBody);
         });
     });
         
     //Log any errors
-    req.on('error', (err) => {
-        console.error(`Problem with request: ${err}`);
-    });
+    req.on('error', (err) => console.log(`Problem with request: ${err}`));
         
     //Write data to request body
     req.write(postData);
     req.end();
 }
 
-//Encapsulates the main processing functions
+//Encapsulates the extraction
 function extract(data){
     //Log start time of HTML processing
-    var procStart = process.hrtime();
+    var procStart = PROCESS.hrtime();
     var courses = new Map();
 
     const selector = 'table.datadisplaytable th.ddtitle a';
 
     console.log('Loading HTML...');
-    const html = cheerio.load(data);
+    const $ = CHEERIO.load(data);
 
     console.log('HTML loaded, querying DOM...');
-    var listings = html(selector);  
+    var listings = $(selector);  
 
     console.log('Query complete, creating sections...');
-    listings.each((i, element) => createSection(html, element, courses));
-    console.log(courses.size);
-    console.log('Section creation complete, writing to file...');
+    listings.each((i, result) => createSection($, result, courses));
+    console.log(`${courses.size} courses extracted`);
+    
+    console.log('Section creation complete, writing to database...');
+    writeItems(Array.from(courses.values()));
 
-    // fs.writeFile('./test/classes.json', `${JSON.stringify(Array.from(courses.values()))}`, 'UTF-8', (err) => {
-    //     if (err) console.log(err);
-    // });
-
-    // console.log("File saved");
+    console.log("File saved");
     //Log the end time of the processing
-    var procEnd = process.hrtime(procStart);
+    var procEnd = PROCESS.hrtime(procStart);
     console.log(`Processing took ${procEnd[0]}s ${procEnd[1] / 1000000}ms`);
 
-    console.log('Sending put to AWS...');
-    const opt = {
-        hostname: "62xcf1gi98.execute-api.us-east-2.amazonaws.com",
-        path: "/test/TUScheduleMakerTest",
-        method: 'PUT'
-    }
-    
-    courses.forEach(x => {
-        const dbreq = https.request(opt, (res) => {
-            //Print status, headers, and set response encoding
-            console.log('Response recieved');
-            console.log(`STATUS: ${res.statusCode}`);
-            console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-            res.setEncoding('UTF-8');
-    
-            //Log any errors
-            dbreq.on('error', (err) => {
-                console.error(`Problem with request: ${err}`);
-            });
-            
-            var body = JSON.stringify(x);
-            body += JSON.stringify("TableName: tusm-test");
-    
-            //Write data to request body
-            dbreq.write(body);
-            dbreq.end();
-        });
+    var used = PROCESS.memoryUsage();
+    console.log(`Memory used:\n ${JSON.stringify(used)}`);
+    console.log('Complete'); 
+}
+
+//Writes to DynamoDB
+function writeItems(items){
+    var requests = items.map(item => {
+        return {
+            PutRequest: {
+                Item: {
+                    name: item.name,
+                    title: item.title,
+                    sections: item.sections
+                }
+            }
+        };
     });
-    
+
+    for (let index = 0; index < requests.length; index += 25) {
+        var subset = requests.slice(index, (index + 25) > requests.length ? requests.length : index + 25);
+        var params = {
+            RequestItems: {
+                'tusm-test': subset
+            }
+        };
+        DOC_CLIENT.batchWrite(params, (err, data) => console.log(err ? `Error: ${err}` : `Sucess: ${data}`));        
+    }
 }
 
 //TESTING
 
-//Use HTML file for testing purposes since HTTP request takes several minutes
-// console.log('Reading file');
-// fs.readFile('./test/classes.html', 'UTF-8', function(err, data){
-//     if (err) console.log(err);
+// Use HTML file for testing purposes since HTTP request takes several minutes
+function HTMLTest(){
+    console.log('Reading file');
+    FS.readFile('./test/classes.html', 'UTF-8', function(err, data){
+        if (err) console.log(err);
 
-//     extract(data);    
-// });
+        extract(data); 
+        
+    });
+}
 
 //UTILITY FUNCTIONS
 
@@ -184,19 +187,19 @@ function createReqParams(subjects){
 }
 
 //Creates a new section for a course given the entry row and the document
-function createSection(html, element, courses){
-    var rowItems = parseEntry(html(element).text());
+function createSection($, listing, courses){
+    var rowItems = parseEntry($(listing).text());
     var name = rowItems[0];
     var title = rowItems[1];
     var crn = rowItems[2];
 
-    var table = getTable(html, element);
+    var table = getTable($, listing);
     var classTimes = [];   
     for (let index = 2; index <= table.length; index++) {
         classTimes.push(createClassTime(table, index));       
     }
 
-    var sec = new Section(crn, classTimes);
+    var sec = new Section(crn, classTimes, isOpen($, listing));
 
     if (!courses.has(name)) {
         courses.set(name, new Course(name, title));           
@@ -206,7 +209,7 @@ function createSection(html, element, courses){
 
 //Parses the string in the entry row and extracts the CRN, class name, and class title
 function parseEntry(text){
-    words = text.split(' - ');
+    var words = text.split(' - ');
     var name = words.length === 4 ? words[2] : words[3];
     var title = words.length === 4 ? words[0] : `${words[0]} - ${words[1]}`;
     var crn = words.length === 4 ? Number(words[1]) : Number(words[2]);
@@ -214,14 +217,32 @@ function parseEntry(text){
     return [name, title, crn];
 }
 
+//Extracts the # of seats available 
+
+//Returns whether a section is open based on the available seats #
+function isOpen($, listing){
+    var td = getAdjEntry($, listing).find('td.dddefault');
+    var seats = $(td)
+        .contents()
+        .filter(function(){ //Lambda doesn't work
+            return this.type == 'text' && this.prev != null && this.prev.name == 'b';
+        })
+        .text()
+        .trim();
+    return Number(seats) > 0;
+}
+
+//Gets the adjacent table to entry that contains the class description, information, etc
+function getAdjEntry($, listing){
+    return $(listing)
+        .parent()
+        .parent()
+        .next();
+}
+
 //Gets the associated data table for the given entry element
-function getTable(html, element){
-    return html(element
-        .parent
-        .parent
-        .next
-        .next)
-        .find('table.datadisplaytable tr');
+function getTable($, listing){
+    return getAdjEntry($, listing).find('table.datadisplaytable tr');
 }
 
 //Creates a new ClassTime object given a data table element and the index of the row of the table to extract the data from
@@ -233,13 +254,14 @@ function createClassTime(table, index){
         .text()
         .trim()
         .split(' - '));       
-    var startTime = times[0];
-    var endTime = times[1]; 
+    var startTime = Number.isNaN(times[0]) ? -1 : times[0];
+    var endTime = times.length > 1 ? times[1] : -1;
 
     var days = table
         .find(`${selector}(3)`)
         .text()
         .trim();
+    days = days === "" ? null : days;
     var location = table
         .find(`${selector}(4)`)
         .text()
@@ -286,66 +308,15 @@ class ClassTime{
         this.location = location;
         this.building = building;
     }
-
-    //Takes 2 ClassTime objects and returns whether they have any days in common
-    static onSameDay(class1, class2){
-        var combined = class1.days + class2.days; //Add all of the characters together
-        return (/([a-zA-Z]).*?\1/).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
-    }
-
-    //Takes 2 ClassTime objects and returns whether they have a time conflict
-    static hasTimeConflict(class1, class2){
-        if (!ClassTime.onSameDay(class1, class2)){ //If both classes are not on the same day, we don't need to check the times
-            return false;
-        }
-
-        //See if the start or end time for class1 falls in between class2's start and end times
-        var startConflict = class1.startTime >= class2.startTime && class1.startTime <= class2.endTime;
-        var endConflict = class1.endTime >= class2.startTime && class1.endTime <= class2.endTime;
-
-        return startConflict || endConflict;
-    }
 }
 
 class Section{
-    constructor(crn, classtimes){
+    constructor(crn, classtimes, isOpen){
         this.crn = crn;
         this.classtimes = classtimes;
-        this.hasLabRec = this.classtimes.length > 1 ? true : false;                  
-    }
-
-    //Takes in 2 Section objects and returns whether or not they have any days in common
-    static onSameDay(section1, section2){
-        //Go through each ClassTime object, and see if they share any days
-        section1.classtimes.forEach(x =>{
-            section2.classtimes.forEach(y =>{
-                if (ClassTime.onSameDay(x, y)){
-                    return true;
-                }
-            })
-        });
-
-        return false;
-    }
-
-    //Takes in 2 Section objects and returns whether or not they have a time conflict
-    static hasTimeConflict(section1, section2){
-        //First test if any days are shared. If not, than no need to test the times
-        if(!Section.onSameDay(section1, section2)){
-            return false;
-        }
-
-        //Go through each ClassTime object. If any of them have a time conflict, than the section as a whole has a time conflict
-        section1.classtimes.forEach(x =>{
-            section2.classtimes.forEach(y =>{
-                if (ClassTime.hasTimeConflict(x, y)){
-                    return true;
-                }
-            })
-        });
-
-        return false;
-    }
+        this.hasLabRec = this.classtimes.length > 1 ? true : false;  
+        this.isOpen = isOpen;                
+    } 
 }
 
 class Course{

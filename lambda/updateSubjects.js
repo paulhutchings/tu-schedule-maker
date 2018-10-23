@@ -1,61 +1,73 @@
-const http = require('http');
-const cheerio = require('cheerio');
+const HTTP = require('http');
+const CHEERIO = require('cheerio');
 const AWS = require('aws-sdk');
-const subjURL = 'http://bulletin.temple.edu/courses/';
+const SUBJECTS_URL = 'http://bulletin.temple.edu/courses/';
+const DOC_CLIENT = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = () => {
     var subjects = [];
 
     console.log('Sending GET request...');
-    http.get(subjURL, (res) => {
+    HTTP.get(SUBJECTS_URL, (res) => {
         const { statusCode } = res;
       
         if (statusCode !== 200) {
-            console.log(`Request Failed.\nStatus Code: ${statusCode}`);
+            console.log('Request Failed.', 'Status Code: ${statusCode}');
             res.resume(); //Consume response to save memory
         } 
+
         console.log('Request successful');
         res.setEncoding('UTF-8');
-        let rawData = '';
+        let resBody = '';
+
         console.log('Reading data...');
-        res.on('data', (chunk) => rawData += chunk);
+        res.on('data', (chunk) => resBody += chunk);
+
         res.on('end', () => {
-            subjects = parseSubjects(rawData);
-            console.log('Writing to file...');          
-            putObjectToS3("tu-schedulemaker-test", "subjects.json", JSON.stringify(subjects));
-        });
-    
+            subjects = parseSubjects(resBody);
+            console.log('Writing to database...');
+            writeItems(subjects);
+        });   
     }).on('error', (err) => console.log(err));
-}
+};
 
 //UTILITY FUNCTIONS
 
 //Parses the subjects out of the HTML
 function parseSubjects(data){
     console.log('Loading response data into HTML...');
-    var html = cheerio.load(data);
-    var subjectList = html('a.sitemaplink');
+    var $ = CHEERIO.load(data);
+    var subjectList = $('a.sitemaplink');
+
     console.log('Extracting subjects...');
     var abbrvs = ['dummy'];
     subjectList.each((i, element) => {
-        var text = html(element).text();
-        var subj = text.slice(text.lastIndexOf('(') + 1, text.length - 1);
+        var entry = $(element).text();
+        var subj = entry.slice(entry.lastIndexOf('(') + 1, entry.length - 1);
         abbrvs.push(subj);
     });
     return abbrvs;
 }
 
-//Writes the JSON file to S3
-function putObjectToS3(bucket, key, data){
-    var s3 = new AWS.S3();
-    var params = {
-        Bucket : bucket,
-        Key : key,
-        Body : data
-    };
-    
-    s3.putObject(params, function(err, data) {
-      if (err) console.log(err); // an error occurred
-      else console.log('Success');           // successful response
+//Puts items to DynamoDB
+function writeItems(items){
+    var requests = items.map(item => {
+        return {
+            PutRequest: {
+                Item: {
+                    subject: item
+                }
+            }
+        };  
     });
+
+    for (let index = 0; index < requests.length; index += 25) {
+        var subset = requests.slice(index, (index + 25) > requests.length ? requests.length : index + 25);
+        var params = {
+            RequestItems: {
+                'subjects-test': subset
+            }
+        };
+        DOC_CLIENT.batchWrite(params, (err, data) => console.log(err ? `Error: ${err}` : `Sucess: ${data}`));        
+    }  
 }
