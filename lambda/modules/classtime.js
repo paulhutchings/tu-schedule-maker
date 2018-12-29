@@ -1,6 +1,7 @@
-class ClassTime{
+module.exports = class ClassTime{
     constructor(days, startTime, endTime, instructor, location, building){
         this.days = days;
+        //Start and end times are stored as 24-hour time based numbers (0-2400) to allow easy comparison
         this.startTime = startTime;
         this.endTime = endTime;
         this.instructor = instructor;
@@ -8,24 +9,22 @@ class ClassTime{
         this.building = building;
     }
 
-    //Takes 2 ClassTime objects and returns whether they have any days in common
-    static onSameDay(class1, class2){
-        var combined = class1.days + class2.days; //Add all of the characters together
+    //Tests the current Classtime instance against another and determines whether they have any days in common
+    onSameDay(someClass){
+        var combined = this.days + someClass.days; //Add all of the characters together
         return (/([a-zA-Z]).*?\1/).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
     }
 
-    //Takes 2 ClassTime objects and returns whether they have a time conflict
-    static hasTimeConflict(class1, class2){
-        if (!ClassTime.onSameDay(class1, class2)){ //If both classes are not on the same day, we don't need to check the times
+    //Tests the current Classtime instance against another and determines whether they have a time conflict
+    hasTimeConflict(someClass){
+        if (!this.onSameDay(someClass)){ //If both classes are not on the same day, we don't need to check the times
             return false;
         }
 
-        //See if the start or end time for class1 falls in between class2's start and end times
-        var startConflict = class1.startTime >= class2.startTime && class1.startTime <= class2.endTime;
-        var endConflict = class1.endTime >= class2.startTime && class1.endTime <= class2.endTime;
+        //See if the start or end time falls in between someClass's start and end times
+        var startConflict = this.startTime >= someClass.startTime && this.startTime <= someClass.endTime;
+        var endConflict = this.endTime >= someClass.startTime && this.endTime <= someClass.endTime;
 
         return startConflict || endConflict;
     }
 }
-
-module.exports = ClassTime;
