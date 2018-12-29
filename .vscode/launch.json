@@ -7,14 +7,16 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Load Class Data",
-            "program": "${workspaceFolder}/lambda\\loadClassData.js"
+            "name": "Launch (v8.10)",
+            "program": "${file}",
+            "runtimeExecutable": "C:\\Program Files\\nodejs\\8.10\\node.exe"
         },
         {
             "type": "node",
             "request": "launch",
-            "name": "Update Subjects",
-            "program": "${workspaceFolder}/lambda\\updateSubjects.js"
+            "name": "Launch (v10.15)",
+            "program": "${file}",
+            "runtimeExecutable": "C:\\Program Files\\nodejs\\10.15\\node.exe"
         }
     ]
 }
