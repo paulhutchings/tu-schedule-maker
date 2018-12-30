@@ -41,7 +41,7 @@ class AsyncTransform extends Transform{
     async _transform(chunk, encoding, callback){
         try {
             this.pending += 1;
-            var task = _task(chunk);          
+            var task = this._task(chunk);          
             callback();
             var result = await task;
             if (result !== undefined){

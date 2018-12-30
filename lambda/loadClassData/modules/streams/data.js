@@ -30,7 +30,7 @@ class ExtractStream extends AsyncTransform {
 
             var listings = $(selector);  
             console.log('Creating sections...');
-            var tasks = listings.map((i, result) => _createSection($, result, courses));
+            var tasks = listings.map((i, result) => this._createSection($, result, courses));
             await Promise.all(tasks);
             console.log(`${courses.size} courses extracted`);
             
@@ -51,7 +51,7 @@ class ExtractStream extends AsyncTransform {
         var table = await getTable($, listing);
         var classTimes = [];   
         for (let index = 2; index <= table.length; index++) {
-            classTimes.push(await _createClassTime(table, index));       
+            classTimes.push(await this._createClassTime(table, index));       
         }
 
         var sec = new Section(crn, classTimes, await isOpen($, listing));

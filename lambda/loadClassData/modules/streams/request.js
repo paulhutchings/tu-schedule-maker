@@ -15,7 +15,7 @@ class RequestStream extends AsyncTransform {
     //Encapsulates the POST request to the server
     async _task(subject){ 
         try {
-            var [options, data] = await _createReqParams(subject);
+            var [options, data] = await this._createReqParams(subject);
             //Log the start time of the request 
             console.log(`Sending POST request for ${subject}...`);
             const reqStart = process.hrtime();
