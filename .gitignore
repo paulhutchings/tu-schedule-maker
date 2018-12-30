@@ -2,3 +2,6 @@
 .vscode/
 
 lambda/test/
+lambda/loadClassData/release/
+lambda/updateSubjects/release/
+lambda/generateSchedules/release/
