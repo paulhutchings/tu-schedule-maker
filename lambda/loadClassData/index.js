@@ -1,81 +1,69 @@
-// import * as ClassTime from "./modules/classtime"
-// import * as Section from "./modules/section"
-// import * as Course from "./modules/course"
+const Section = require('./modules/section');
+const Course = require('./modules/course');
+const ClassTime = require('./modules/classtime');
 
-// const FS = require('fs');
 const QUERYSTRING = require('querystring');
 const PROCESS = require('process');
 const HTTPS = require('https');
-const  { promisify } = require ('util');
-const get = promisify(HTTPS.get);
-const request = promisify(HTTPS.request);
 const CHEERIO = require('cheerio');
 const AWS = require('aws-sdk');
 
 const DB = new AWS.DynamoDB.DocumentClient();
 const URL = 'https://prd-wlssb.temple.edu/prod8/bwckschd.p_get_crse_unsec';
+const REFER = 'https://prd-wlssb.temple.edu/prod8/bwckgens.p_proc_term_date';
 
-//Test using JSON files
-// FS.readFile('./lambda/test/subjects.json', 'utf8', (err, data) =>{
-//     if (err) console.log(err);
-
-//     JSON.parse(data).forEach(item => sendPost(createReqParams(item), item.toString()));
-// });
-
-exports.handler = main();
+exports.handler = main;
 
 //The main function of the program
-async function main(){
-    try {
-        //Read the subjects from the database
-        console.log('Loading subjects...');
-        var params = {
-            TableName: 'subjects-test'
-        };
+function main(){
+    //Read the subjects from the database
+    console.log('Loading subjects...');
+    var params = {
+        TableName: 'subjects-test'
+    };
 
-        var subjects = await DB
-            .scan(params)
-            .items;
-        subjects.forEach(subject => 
-            sendPost(
-                createReqParams(subject), 
-                subject.toString()));
-    } catch (error) {
-        console.log(error);
-    }
+    DB.scan(params, (error, data) => {
+        if (error){
+            console.log(error);
+        } else {
+            data.Items.forEach(item => sendPost(item['subject']));
+        } 
+    });   
 }
 
-//Web request functions
-
 //Encapsulates the POST request to the server
-async function sendPost(config, subject){ 
-    try {
-        const options, data = config;
-        //Log the start time of the request 
-        console.log(`Sending POST request for ${subject}...`);
-        const reqStart = PROCESS.hrtime();
-        const response = await request(options, data); 
+async function sendPost(subject){ 
+    var [options, data] = await createReqParams(subject);
+    //Log the start time of the request 
+    console.log(`Sending POST request for ${subject}...`);
+    const reqStart = PROCESS.hrtime();
+    const req = HTTPS.request(options, (res) => {
+        console.log(res.statusCode);
+        let body;
+        res.on('data', (chunk) => body += chunk);
+        res.on('end', () => {
+            //Log the end time of the request.
+            const reqEnd = PROCESS.hrtime(reqStart);
+            console.log(`Request for ${subject} took ${reqEnd[0]}s`);
 
-        //Get the class data from the HTML
-        extractData(response.data);
-        //Log the end time of the request. Since extractData is not awaited this will execute immediately after
-        const reqEnd = PROCESS.hrtime(reqStart);
-        console.log(`Request for ${subject} took ${reqEnd[0]}s`); 
-    } catch (error) {
-        console.log(error);
-    }  
+            //Get the class data from the HTML
+            extractData(body);        
+        });
+    });
+    req.on('error', (err) => console.log(err));
+    req.write(data);
+    req.end();
 }
 
 //Creates the request body and headers
-function createReqParams(subject){
+async function createReqParams(subject){
     const term = 201903;
-    const subjects = ['dummy', subject];
     const host = 'prd-wlssb.temple.edu';
     const path = '/prod8/bwckschd.p_get_crse_unsec';
 
-    var postData =  QUERYSTRING.stringify({
+    const postData =  QUERYSTRING.stringify({
         term_in: term,
-        sel_subj: subjects,
+        sel_subj: ['dummy', subject],
         sel_day: 'dummy',
         sel_schd: 'dummy',
         sel_insm: ['dummy', '%'],
@@ -98,13 +86,12 @@ function createReqParams(subject){
         end_ap: 'a'  
     });
     
-    var headers = {
+    const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': postData.length,
-        'Referer': URL
+        'Referer': REFER
     };
 
-    var options = {
+    const options = {
         hostname: host,
         port: 443,
         path: path,
@@ -134,13 +121,12 @@ async function extractData(data){
     console.log(`${courses.size} courses extracted`);
     
     console.log('Section creation complete, writing to database...');
-    // await writeItems(Array.from(courses.values()));
-    FS.writeFile('./lambda/test/classes.json', JSON.stringify(courses.values()), (err) => {if (err) console.log(err)});
+    await writeItems(Array.from(courses.values()));
 
     console.log("Database entry complete");
     //Log the end time of the processing
     const procEnd = PROCESS.hrtime(procStart);
-    console.log(`Processing took ${procEnd[0]}s ${procEnd[1] / 1000000}ms`);
+    console.log(`Processing took ${procEnd[0]}s`);
 
     // var used = PROCESS.memoryUsage();
     // console.log(`Memory used:\n ${JSON.stringify(used)}`);
@@ -297,40 +283,6 @@ async function writeItems(items){
             }
         };
 
-        console.log(await DB.batchWrite(params));       
-    }
-}
-
-//CLASSES
-
-class ClassTime{
-    constructor(days, startTime, endTime, instructor, location, building){
-        this.days = days;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.instructor = instructor;
-        this.location = location;
-        this.building = building;
-    }
-}
-
-class Section{
-    constructor(crn, classtimes, isOpen){
-        this.crn = crn;
-        this.classtimes = classtimes;
-        this.hasLabRec = this.classtimes.length > 1 ? true : false;  
-        this.isOpen = isOpen;                
-    } 
-}
-
-class Course{
-    constructor(name, title){
-        this.name = name; //ex: CIS 1068
-        this.title=title; //ex: "Program Design and Abstraction"
-        this.sections = [];
-    }
-
-    addSection(section) {
-        this.sections.push(section);
+        DB.batchWrite(params, (err, data) => console.log(err ? `Error: ${err}` : `Success: ${data}`));      
     }
 }

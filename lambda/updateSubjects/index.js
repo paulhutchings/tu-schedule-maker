@@ -11,23 +11,22 @@ exports.handler = main;
 
 //FUNCTIONS
 
-//The main method of the program
-async function main(){ 
+//The main function of the program
+function main(){ 
     console.log('Sending GET request...');
     HTTPS.get(URL, (res) => {
         console.log(res.statusCode);
         var body;
         res.on('data', (chunk) => body += chunk);
-        res.on('end', async () => {
-            var subjects = await parseSubjects(body);
-            await writeItems(subjects);
-            console.log('Complete');        
+        res.on('end', () => {
+            var subjects = parseSubjects(body);
+            writeItems(subjects);       
         });
     }).on('error', (err) => console.log(err.message));
 }
 
 //Extracts the subject abbreviations from the HTML
-async function parseSubjects(data){
+function parseSubjects(data){
     console.log('Loading response data into HTML...');
     var $ = CHEERIO.load(data);
     var subjectList = $(SELECTOR);
@@ -46,7 +45,8 @@ async function parseSubjects(data){
 }
 
 //Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
-async function writeItems(items){
+function writeItems(items){
+    console.log('Writing to database...');
     var requests = items.map(item => {
         return {
             PutRequest: {
@@ -67,7 +67,13 @@ async function writeItems(items){
                 'subjects-test': subset
             }
         };
-
-        console.log(await DB.batchWrite(params));      
+        
+        DB.batchWrite(params, (err, data) => {
+            if (err){
+                console.log(err);
+            } else {
+                console.log(`Failed items: ${Object.entries(data.UnprocessedItems).length}`);
+            }
+        });        
     }  
 }
