@@ -39,7 +39,8 @@ async function main(){
         const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE, DB);
         
         var data = await readDB;
-        const InputStream = new ArrayStream(data.Items);
+        var items = data.Items.map(item => item['subject']);
+        const InputStream = new ArrayStream(items);
         //set up stream chaining
         InputStream
             .pipe(HttpThrottle)
@@ -50,7 +51,8 @@ async function main(){
             .pipe(DatabaseThrottle)
             .pipe(DBWriteStream);
 
-        DBWriteStream.on('END', () => console.log('Complete'));
+        await new Promise(fulfill => DBWriteStream.on('finish', fulfill));
+        console.log('Complete');
 
     } catch (error){
         console.log(`Error: ${error}`);

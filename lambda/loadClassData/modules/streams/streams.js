@@ -15,9 +15,9 @@ class Throttle extends Duplex {
       this.delay = ms;
     }
   
-    async _write(chunk, callback) { 
+    _write(chunk, encoding, callback) { 
         this.push(chunk);
-        setTimeout(() => callback(), this.delay);
+        setTimeout(callback, this.delay);
     }
   
     _read() {
@@ -48,11 +48,11 @@ class AsyncTransform extends Transform{
                 this.push(result);
             }
             this.pending -= 1;
-            if (this.pending === 0) {
+            if (this.pending === 0 && this.flushcb) {
                 this.flushcb();
             }
         } catch (error) {
-            console.log(`Error: ${error.message}`)
+            console.log(`Error: ${error}`)
         } 
     }
 
@@ -100,11 +100,7 @@ class ArrayStream extends Readable {
 
     _read() {
         if (this.index <= this.array.length) {
-            const chunk = {
-                data: this.array[this.index],
-                index: this.index
-            };
-            this.push(chunk);
+            this.push(this.array[this.index]);
             this.index += 1;
         } else {
             this.push(null);
