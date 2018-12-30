@@ -1,6 +1,4 @@
 const {AsyncTransform} = require('./streams');
-const AWS = require('aws-sdk');
-const DB = new AWS.DynamoDB.DocumentClient();
 
 class DatabasePrepStream extends AsyncTransform {
     constructor(){
@@ -25,9 +23,10 @@ class DatabasePrepStream extends AsyncTransform {
 
 //creates the batchWrite request and writes to the given table
 class DatabaseWriteStream extends AsyncTransform {
-    constructor(tableName){
+    constructor(tableName, dbObj){
         super();
         this.tableName = tableName;
+        this.db = dbObj;
     }
 
     async _task(items){
@@ -37,7 +36,7 @@ class DatabaseWriteStream extends AsyncTransform {
                     [this.tableName]: items
                 }
             };
-            var response = await DB.batchWrite(params).promise()
+            var response = await this.db.batchWrite(params).promise()
             var failedItems = Object.entries(response.UnprocessedItems).length;
             if (failedItems > 0){
                 console.log(`Failed items: ${failedItems}`);

@@ -1,11 +1,11 @@
 const AWS = require('aws-sdk');
-const DB = new AWS.DynmoDB.DocumentClient();
+const DB = new AWS.DynamoDB.DocumentClient();
 const { Throttle, 
         QueueStream,
         ArrayStream 
     } = require('./modules/streams/streams');
-const { RequestStream } = require('./modules/streams/request');
-const { ExtractStream } = require('./modules/streams/data');
+const RequestStream = require('./modules/streams/request');
+const ExtractStream = require('./modules/streams/data');
 const { DatabasePrepStream, 
         DatabaseWriteStream 
     } = require('./modules/streams/database');
@@ -36,7 +36,7 @@ async function main(){
         const HttpStream = new RequestStream(HOST, PATH, REFER, TERM);
         const DataStream = new ExtractStream();
         const PrepStream = new DatabasePrepStream();
-        const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE);
+        const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE, DB);
         
         var data = await readDB;
         const InputStream = new ArrayStream(data.Items);

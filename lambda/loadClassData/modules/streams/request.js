@@ -1,6 +1,6 @@
-const querystring = require('querystring')();
-const process = require('process')();
-const https = require('https')();
+const querystring = require('querystring');
+const process = require('process');
+const https = require('https');
 const {AsyncTransform} = require('./streams');
 
 class RequestStream extends AsyncTransform {

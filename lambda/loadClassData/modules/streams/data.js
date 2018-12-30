@@ -1,14 +1,14 @@
 const cheerio = require('cheerio');
 const process = require('process');
-const ClassTime = require('../modules/classtime');
-const Section = require('../modules/section');
-const Course = require('../modules/course');
+const ClassTime = require('../classtime');
+const Section = require('../section');
+const Course = require('../course');
 const { parseEntry, 
         getTable, 
         isOpen, 
         parseTime, 
         cleanInstructorString 
-    } = require('../../parse');
+    } = require('../parse');
 const {AsyncTransform} = require('./streams');
 
 class ExtractStream extends AsyncTransform {
