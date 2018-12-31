@@ -20,25 +20,25 @@ class ExtractStream extends AsyncTransform {
     //parse the HTML, extract the sections, and write them to the database;
     async _task(data){ 
         try {
+            const [subject, html] = data;
             var courses = new Map();
             const selector = 'table.datadisplaytable th.ddtitle a';
 
             //Log start time of HTML processing
+            console.log(`Finding courses in ${subject}...`);
             const procStart = process.hrtime();
-            console.log('Loading HTML...');
-            const $ = cheerio.load(data);
+            const $ = cheerio.load(html);
 
             var listings = $(selector);  
-            console.log('Creating sections...');
-            var tasks = listings.map((i, result) => this._createSection($, result, courses));
-            await Promise.all(tasks);
-            console.log(`${courses.size} courses extracted`);
+            var tasks = listings.map(async (i, result) => this._createSection($, result, courses));
+            await Promise.all(tasks.toArray());
+            console.log(`${courses.size} courses found for ${subject}`);
             
             //Log the end time of the processing
             const procEnd = process.hrtime(procStart);
-            console.log(`Processing took ${procEnd[0]}s`);
+            console.log(`Processing ${subject} took ${procEnd[0]}s`);
 
-            return Array.from(courses.values());
+            return [subject, Array.from(courses.values())];
         } catch (error) {
             console.log(`Error: ${error}`);
         }
@@ -46,59 +46,68 @@ class ExtractStream extends AsyncTransform {
 
     //Creates a new section for a course given the entry row and the document root
     async _createSection($, listing, courses){
-        var [name, title, crn] = await parseEntry($(listing).text());
+        try {
+            var [name, title, crn] = await parseEntry($(listing).text());
         
-        var table = await getTable($, listing);
-        var classTimes = [];   
-        for (let index = 2; index <= table.length; index++) {
-            classTimes.push(await this._createClassTime(table, index));       
+            var table = await getTable($, listing);
+            var classTimes = [];   
+            for (let index = 2; index <= table.length; index++) {
+                classTimes.push(await this._createClassTime(table, index));       
+            }
+
+            var sec = new Section(crn, classTimes, await isOpen($, listing));
+
+            if (!courses.has(name)) {
+                courses.set(name, new Course(name, title));           
+            }
+
+            courses.get(name).addSection(sec);
+        } catch (error) {
+            console.log(`Error: ${error}`);
         }
-
-        var sec = new Section(crn, classTimes, await isOpen($, listing));
-
-        if (!courses.has(name)) {
-            courses.set(name, new Course(name, title));           
-        }
-
-        courses.get(name).addSection(sec);
     }
 
     //Creates a new ClassTime object given a data table element and the index of the row of the table to extract the data from
     async _createClassTime(table, index){
-        const selector = `tr:nth-child(${index}) td.dddefault:nth-child`;
+        try {
+            const selector = `tr:nth-child(${index}) td.dddefault:nth-child`;
 
-        var times = await parseTime(table
-            .find(`${selector}(2)`)
-            .text()
-            .trim()
-            .split(' - '));       
-        var startTime = Number.isNaN(times[0]) 
-            ? -1 
-            : times[0];
-        var endTime = times.length > 1 
-            ? times[1] 
-            : -1;
+            var times = await parseTime(table
+                .find(`${selector}(2)`)
+                .text()
+                .trim()
+                .split(' - '));       
+            var startTime = Number.isNaN(times[0]) 
+                ? -1 
+                : times[0];
+            var endTime = times.length > 1 
+                ? times[1] 
+                : -1;
 
-        var days = table
-            .find(`${selector}(3)`)
-            .text()
-            .trim();
-        days = days === "" 
-            ? null 
-            : days;
-        var location = table
-            .find(`${selector}(4)`)
-            .text()
-            .trim();
-        var building = location === "TBA" 
-            ? null 
-            : location
-            .slice(0, location.lastIndexOf(' '));
-        var instructor = await cleanInstructorString(table
-            .find(`${selector}(7)`)
-            .text());
-        
-        return new ClassTime(days, startTime, endTime, instructor, location, building);
+            var days = table
+                .find(`${selector}(3)`)
+                .text()
+                .trim();
+            days = days === "" 
+                ? null 
+                : days;
+            var location = table
+                .find(`${selector}(4)`)
+                .text()
+                .trim();
+            var building = location === "TBA" 
+                ? null 
+                : location
+                .slice(0, location.lastIndexOf(' '));
+            var instructor = await cleanInstructorString(table
+                .find(`${selector}(7)`)
+                .text());
+            
+            return new ClassTime(days, startTime, endTime, instructor, location, building);
+            
+        } catch (error) {
+            console.log(`Error: ${error}`);
+        }       
     }
 }
 

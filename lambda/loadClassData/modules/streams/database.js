@@ -6,7 +6,9 @@ class DatabasePrepStream extends AsyncTransform {
     }
 
     //breaks apart the array of courses back into a stream
-    async _task(items){
+    async _task(data){
+        const [subject, items] = data;
+        console.log(`Creating PUT requests for ${subject}...`);
         items.forEach(item => {
             this.push({
                 PutRequest: {
@@ -17,7 +19,8 @@ class DatabasePrepStream extends AsyncTransform {
                     }
                 }
             });
-        }) 
+        });
+        console.log(`Database prep complete for ${subject}`); 
     }
 }
 
@@ -27,9 +30,12 @@ class DatabaseWriteStream extends AsyncTransform {
         super();
         this.tableName = tableName;
         this.db = dbObj;
+        this.totalIn = 0;
+        this.totalOut = 0;
     }
 
     async _task(items){
+        this.totalIn += items.length;
         try {
             var params = {
                 RequestItems: {
@@ -39,6 +45,7 @@ class DatabaseWriteStream extends AsyncTransform {
             var response = await this.db.batchWrite(params).promise()
             var failedItems = Object.entries(response.UnprocessedItems).length;
             if (failedItems > 0){
+                this.totalOut += items.length - failedItems;
                 console.log(`Failed items: ${failedItems}`);
             } else {
                 console.log('BatchWrite succeeded');
@@ -46,6 +53,8 @@ class DatabaseWriteStream extends AsyncTransform {
         } catch (error) {
             console.log(`Error: ${error}`);
         }
+        console.log(`Total items received: ${this.totalIn}`);
+        console.log(`Total items written to database: ${this.totalOut}`);
     }
 }
 

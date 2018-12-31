@@ -16,47 +16,37 @@ class Throttle extends Duplex {
     }
   
     _write(chunk, encoding, callback) { 
-        if (chunk !== null && chunk !== undefined){
-            this.push(chunk);
-            setTimeout(callback, this.delay);
-        }
-        else callback();
+        this.push(chunk);
+        setTimeout(callback, this.delay);
     }
   
     _read() {
 
     }
-  
-    _final() {
-       this.push(null);
+
+    _final(){
+        this.push(null);
     }
   }
 
 //Processes the data chunks asynchronously. Allows more data to be piped to transform() 
 //before the current chunk has been processed
-class AsyncTransform extends Transform{
+class AsyncTransform extends Transform {
     constructor(){
         super({objectMode: true});
-        this.pending = 0;
+        this.pending = [];
         this.flushcb = undefined;
     }
 
     async _transform(chunk, encoding, callback){
         try {
-            if (chunk !== null && chunk !== undefined){
-                this.pending += 1;
-                var task = this._task(chunk);          
-                callback();
-                var result = await task;
-                if (result !== undefined){
-                    this.push(result);
-                }
-                this.pending -= 1;
-                if (this.pending === 0 && this.flushcb) {
-                    this.flushcb();
-                }
-            }
-            else callback();
+            var task = this._task(chunk);
+            this.pending.push(task);
+            callback();
+            var result = await task;
+            if (result !== undefined) {
+                this.push(result);
+            }                  
         } catch (error) {
             console.log(`Error: ${error}`)
         } 
@@ -67,8 +57,9 @@ class AsyncTransform extends Transform{
         return chunk;
     }
 
-    _flush(callback){
-        this.flushcb = callback;
+    async _final(){
+        await Promise.all(this.pending);
+        this.push(null);
     }
 }
 
@@ -78,9 +69,11 @@ class QueueStream extends Transform {
         super({objectMode: true});
         this.size = size;
         this.queue = [];
+        this.total = 0;
     }
 
     _transform(chunk, encoding, callback){
+        this.total += 1;
         this.queue.push(chunk);
         if (this.queue.length === this.size){
             this.push(this.queue);
@@ -93,6 +86,7 @@ class QueueStream extends Transform {
     _flush(callback){
         //push the remaining items before signalling END
         this.push(this.queue);
+        console.log(`Total number of courses queued: ${this.total}`);
         callback();
     }
 }
@@ -105,7 +99,7 @@ class ArrayStream extends Readable {
     }
 
     _read() {
-        if (this.index <= this.array.length) {
+        if (this.index < this.array.length) {
             this.push(this.array[this.index]);
             this.index += 1;
         } else {

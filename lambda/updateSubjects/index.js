@@ -5,7 +5,7 @@ const axios = require('axios');
 const doc_client = new aws.DynamoDB.DocumentClient();
 const URL = 'https://bulletin.temple.edu/courses/';
 const SELECTOR = 'a.sitemaplink';
-const TABLENAME = 'subjects-test';
+const TABLENAME = 'tusm-subjects';
 
 
 exports.handler = main;

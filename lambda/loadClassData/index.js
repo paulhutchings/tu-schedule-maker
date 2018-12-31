@@ -50,7 +50,7 @@ async function main(){
             .pipe(DatabaseThrottle)
             .pipe(DBWriteStream);
 
-        await new Promise(fulfill => DBWriteStream.on('finish', fulfill));
+        await new Promise(resolve => DBWriteStream.on('finish', resolve));
         console.log('Complete');
 
     } catch (error){

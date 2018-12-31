@@ -21,7 +21,7 @@ class RequestStream extends AsyncTransform {
             var response = await axios.post(this.url, data, options);
             const reqEnd = process.hrtime(reqStart);
             console.log(`Request for ${subject} took ${reqEnd[0]}s`);
-            return response.data;
+            return [subject, response.data];
         } catch (error) {
             console.log(`Error: ${error}`);
         }
