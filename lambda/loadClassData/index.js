@@ -1,5 +1,5 @@
-const AWS = require('aws-sdk');
-const DB = new AWS.DynamoDB.DocumentClient();
+const aws = require('aws-sdk');
+const doc_client = new aws.DynamoDB.DocumentClient();
 const { Throttle, 
         QueueStream,
         ArrayStream 
@@ -12,8 +12,7 @@ const { DatabasePrepStream,
 
 const REFER = 'https://prd-wlssb.temple.edu/prod8/bwckgens.p_proc_term_date';
 const TERM = 201903;
-const HOST = 'prd-wlssb.temple.edu';
-const PATH = '/prod8/bwckschd.p_get_crse_unsec';
+const URL = 'https://prd-wlssb.temple.edu/prod8/bwckschd.p_get_crse_unsec';
 const SUBJECTS_TABLE = 'subjects-test';
 const COURSE_TABLE = 'tusm-test';
 
@@ -27,16 +26,16 @@ async function main(){
         var params = {
             TableName: SUBJECTS_TABLE
         };
-        var readDB = DB.scan(params).promise();
+        var readDB = doc_client.scan(params).promise();
 
         //initialize streams
         const Queue = new QueueStream();
         const HttpThrottle = new Throttle();
         const DatabaseThrottle = new Throttle();
-        const HttpStream = new RequestStream(HOST, PATH, REFER, TERM);
+        const HttpStream = new RequestStream(URL, REFER, TERM);
         const DataStream = new ExtractStream();
         const PrepStream = new DatabasePrepStream();
-        const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE, DB);
+        const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE, doc_client);
         
         var data = await readDB;
         var items = data.Items.map(item => item['subject']);

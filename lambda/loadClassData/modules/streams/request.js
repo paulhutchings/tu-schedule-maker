@@ -1,13 +1,12 @@
 const querystring = require('querystring');
 const process = require('process');
-const https = require('https');
+const axios = require('axios');
 const {AsyncTransform} = require('./streams');
 
 class RequestStream extends AsyncTransform {
-    constructor(host, path, refer, term){
+    constructor(url, refer, term){
         super();
-        this.host = host;
-        this.path = path;
+        this.url = url;
         this.refer = refer;
         this.term = term;
     }
@@ -19,21 +18,10 @@ class RequestStream extends AsyncTransform {
             //Log the start time of the request 
             console.log(`Sending POST request for ${subject}...`);
             const reqStart = process.hrtime();
-            const req = https.request(options, (res) => {
-                console.log(res.statusCode);
-                let body;
-                res.on('DATA', (chunk) => body += chunk);
-                res.on('END', () => {
-                    //Log the end time of the request.
-                    const reqEnd = process.hrtime(reqStart);
-                    console.log(`Request for ${subject} took ${reqEnd[0]}s`);
-
-                    return body;      
-                });
-            });
-            req.on('ERROR', (err) => console.log(err));
-            req.write(data);
-            req.end();
+            var response = await axios.post(this.url, data, options);
+            const reqEnd = process.hrtime(reqStart);
+            console.log(`Request for ${subject} took ${reqEnd[0]}s`);
+            return response.data;
         } catch (error) {
             console.log(`Error: ${error}`);
         }
@@ -72,10 +60,7 @@ class RequestStream extends AsyncTransform {
         };
 
         const options = {
-            hostname: this.host,
-            port: 443,
-            path: this.path,
-            method: 'POST',
+            timeout: 30000,
             headers: headers
         };
 

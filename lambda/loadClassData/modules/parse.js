@@ -62,3 +62,5 @@ async function parseTime(timeStrings){
         return time;
     });
 }
+
+module.exports = {parseEntry, parseTime, cleanInstructorString, getAdjEntry, getTable, isOpen}

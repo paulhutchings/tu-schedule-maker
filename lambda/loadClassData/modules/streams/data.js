@@ -47,7 +47,7 @@ class ExtractStream extends AsyncTransform {
     //Creates a new section for a course given the entry row and the document root
     async _createSection($, listing, courses){
         var [name, title, crn] = await parseEntry($(listing).text());
-
+        
         var table = await getTable($, listing);
         var classTimes = [];   
         for (let index = 2; index <= table.length; index++) {

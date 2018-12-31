@@ -16,8 +16,11 @@ class Throttle extends Duplex {
     }
   
     _write(chunk, encoding, callback) { 
-        this.push(chunk);
-        setTimeout(callback, this.delay);
+        if (chunk !== null && chunk !== undefined){
+            this.push(chunk);
+            setTimeout(callback, this.delay);
+        }
+        else callback();
     }
   
     _read() {
@@ -40,17 +43,20 @@ class AsyncTransform extends Transform{
 
     async _transform(chunk, encoding, callback){
         try {
-            this.pending += 1;
-            var task = this._task(chunk);          
-            callback();
-            var result = await task;
-            if (result !== undefined){
-                this.push(result);
+            if (chunk !== null && chunk !== undefined){
+                this.pending += 1;
+                var task = this._task(chunk);          
+                callback();
+                var result = await task;
+                if (result !== undefined){
+                    this.push(result);
+                }
+                this.pending -= 1;
+                if (this.pending === 0 && this.flushcb) {
+                    this.flushcb();
+                }
             }
-            this.pending -= 1;
-            if (this.pending === 0 && this.flushcb) {
-                this.flushcb();
-            }
+            else callback();
         } catch (error) {
             console.log(`Error: ${error}`)
         } 
