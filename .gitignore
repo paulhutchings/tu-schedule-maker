@@ -1,5 +1,5 @@
 .idea/
 .vscode/
 
-/lambda/test/
+./lambda/test/
 *.zip
