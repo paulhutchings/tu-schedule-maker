@@ -1,59 +1,56 @@
 const aws = require('aws-sdk');
 const doc_client = new aws.DynamoDB.DocumentClient();
 const { Throttle, 
-        QueueStream,
-        ArrayStream 
+        QueueStream 
     } = require('./modules/streams/streams');
 const RequestStream = require('./modules/streams/request');
 const ExtractStream = require('./modules/streams/data');
-const { DatabasePrepStream, 
+const { DBPrepStream, 
         DatabaseWriteStream 
     } = require('./modules/streams/database');
+const {Readable} = require('stream');
 
-const REFER = 'https://prd-wlssb.temple.edu/prod8/bwckgens.p_proc_term_date';
-const TERM = 201903;
-const URL = 'https://prd-wlssb.temple.edu/prod8/bwckschd.p_get_crse_unsec';
-const SUBJECTS_TABLE = 'subjects-test';
-const COURSE_TABLE = 'tusm-test';
-
-exports.handler = main;
-
-//The main function of the program
-async function main(){
+/**
+ * @function Main - The entry point for the lambda function
+ * @param {object} event 
+ * @param {object} context - The AWS Lambda context object
+ * @param {function} callback - The function to be invoked once completed
+ */
+async function main(event, context, callback){
     try {
         //Read the subjects from the database
         console.log('Loading subjects...');
         var params = {
-            TableName: SUBJECTS_TABLE
+            TableName: process.env.SUBJECTS_TABLE
         };
-        var readDB = doc_client.scan(params).promise();
+        var readSubjects = doc_client.scan(params).promise();
 
         //initialize streams
-        const Queue = new QueueStream();
-        const HttpThrottle = new Throttle();
-        const DatabaseThrottle = new Throttle();
-        const HttpStream = new RequestStream(URL, REFER, TERM);
-        const DataStream = new ExtractStream();
-        const PrepStream = new DatabasePrepStream();
-        const DBWriteStream = new DatabaseWriteStream(COURSE_TABLE, doc_client);
+        const InputStream = new Readable();
+        const DBQueue = new QueueStream();
+        const HttpThrottle = new Throttle(25);
+        const DBWriteStream = new DatabaseWriteStream(process.env.COURSE_TABLE, doc_client);
         
-        var data = await readDB;
-        var items = data.Items.map(item => item['subject']);
-        const InputStream = new ArrayStream(items);
+        var data = await readSubjects;
+        data.Items.forEach(item => InputStream.push(item.abbreviation));
+        InputStream.push(null);
+
         //set up stream chaining
         InputStream
             .pipe(HttpThrottle)
-            .pipe(HttpStream)
-            .pipe(DataStream)
-            .pipe(PrepStream)
-            .pipe(Queue)
-            .pipe(DatabaseThrottle)
+            .pipe(RequestStream)
+            .pipe(ExtractStream)
+            .pipe(DBPrepStream)
+            .pipe(DBQueue)
             .pipe(DBWriteStream);
 
         await new Promise(resolve => DBWriteStream.on('finish', resolve));
         console.log('Complete');
-
+        callback(null, 'Success');
     } catch (error){
         console.log(`Error: ${error}`);
+        callback(error);
     }
 }
+
+exports.handler = main;

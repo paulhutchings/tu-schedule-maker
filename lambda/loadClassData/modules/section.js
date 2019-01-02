@@ -40,4 +40,4 @@ class Section {
     }
 }
 
-module.exports = Section;
+modules.export = Section;

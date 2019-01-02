@@ -65,15 +65,20 @@ async function cleanInstructorString(str){
 }
 
 //Takes the array of time strings from the time column, and converts each to a 24 hour format number
-async function parseTime(timeStrings){
+async function parseTime(timeString){
     try {
-        return timeStrings.map(x => {
-            var time = Number(String(x).replace(/[apm:]/g,''));
-            if (String(x).includes("pm") && time < 1200) {
-                time += 1200;
-            }
-            return time;
-        });
+        if (timeString === "TBA"){
+            return [-1, -1];
+        }
+        else return timeString
+            .split(' - ')
+            .map(str => {
+                var time = Number(String(str).replace(/[apm:]/g,''));
+                if (String(str).includes("pm") && time < 1200) {
+                    time += 1200;
+                }
+                return time;
+            });
     } catch (error) {
         console.log(`Error: ${error}`);
     }   

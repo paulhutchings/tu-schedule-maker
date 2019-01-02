@@ -1,12 +1,12 @@
 const cheerio = require('cheerio');
 const aws = require('aws-sdk');
 const axios = require('axios');
-
 const doc_client = new aws.DynamoDB.DocumentClient();
+
 const URL = 'https://bulletin.temple.edu/courses/';
 const SELECTOR = 'a.sitemaplink';
-const TABLENAME = 'tusm-subjects';
-
+const TABLENAME = 'TUSM.SUBJECTS';
+const BATCHWRITE_MAX = 25;
 
 exports.handler = main;
 
@@ -18,6 +18,7 @@ async function main(){
         console.log('Sending GET request...');
         var response = await axios.get(URL);
         var subjects = await parseSubjects(response.data);
+        console.log(`${subjects.length} subjects found`);
         await writeItems(subjects);
         console.log('Complete');
     } catch (error) {
@@ -56,22 +57,24 @@ async function writeItems(items){
         var requests = [];
         const pairs = items.entries();
         for (let index = 0; index < items.size; index++) {
-            let pair = pairs.next().value;
+            let [subjAbbrv, subjName] = pairs.next().value;
             requests.push({
                 PutRequest: {
                     Item: {
-                        abbreviation: pair[0],
-                        name: pair[1]
+                        abbreviation: subjAbbrv,
+                        name: subjName
                     }
                 }
             });   
         }
 
-        for (let index = 0; index < requests.length; index += 25) {
+        var totalOut = items.length;
+
+        for (let index = 0; index < requests.length; index += BATCHWRITE_MAX) {
             var subset = requests.slice(index, 
-                    (index + 25) > requests.length 
+                    (index + BATCHWRITE_MAX) > requests.length 
                     ? requests.length 
-                    : index + 25);
+                    : index + BATCHWRITE_MAX);
             var params = {
                 RequestItems: {
                     [TABLENAME]: subset
@@ -81,11 +84,16 @@ async function writeItems(items){
             var response = await doc_client.batchWrite(params).promise();     
             var failedItems = Object.entries(response.UnprocessedItems).length;
             if (failedItems > 0) {
+                totalOut -= failedItems;
                 console.log(`Failed items: ${failedItems}`);
             } else {
                 console.log('BatchWrite succeeded');
             }
-        }  
+        } 
+        
+        console.log(`Total items received: ${items.length}`);
+        console.log(`Total items written to database: ${totalOut}`);
+        console.log(`Total failed items: ${items.length - totalOut}`);
     } catch (error) {
         console.log(`Error: ${error}`); 
     }
