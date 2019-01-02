@@ -2,7 +2,7 @@ const cheerio = require('cheerio');
 const ClassTime = require('../classtime');
 const Section = require('../section');
 const Course = require('../course');
-const { parseEntry, 
+const { parseEntryTitle, 
         getTable, 
         isOpen, 
         parseTime, 
@@ -44,7 +44,7 @@ async function extractData(data){
  */
 async function createSection($, listing, courses){
     try {
-        var [name, title, crn] = await parseEntry($(listing).text());
+        var [name, title, crn] = await parseEntryTitle($(listing).text());
 
         var table = await getTable($, listing);
         var classTimes = [];
@@ -75,17 +75,10 @@ async function createClassTime(table, index){
     try {
         const selector = `tr:nth-child(${index}) td.dddefault:nth-child`;
 
-        var times = await parseTime(table
+        var [startTime, endTime] = await parseTime(table
             .find(`${selector}(2)`)
             .text()
             .trim());
-        var startTime = Number.isNaN(times[0])
-            ? -1
-            : times[0];
-        var endTime = times.length > 1
-            ? times[1]
-            : -1;
-
         var days = table
             .find(`${selector}(3)`)
             .text()

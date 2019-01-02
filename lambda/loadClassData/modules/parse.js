@@ -1,7 +1,11 @@
 //Various parsing functions for parsing the HTML response
 
-//Parses the string in the entry row and extracts the CRN, class name, and class title
-async function parseEntry(text){
+/**
+ * @function parseEntryTitle - Parses the string in the entry row and extracts the CRN, class name, and class title
+ * @param {string} text - The title string containing the CRN, course name, and course title
+ * @return {[string, string, number]} - A tuple containing the CRN, course name, and course title
+ */
+async function parseEntryTitle(text){
     try {
         var words = text.split(' - ');
         var name = words.length === 4 
@@ -16,16 +20,26 @@ async function parseEntry(text){
 
         return [name, title, crn];
     } catch (error) {
-        console.log(`Error: ${error}`);
+        console.log(error);
     }
 }
 
-//Gets the associated data table for the given entry element
+/**
+ * @function getTable - Gets the associated data table for the given entry element
+ * @param {CheerioElement} $ - The document root
+ * @param {CheerioElement} listing - The listing for the section on the page
+ * @return {CheerioElement} - The data table within the entry
+ */
 async function getTable($, listing){
     return (await getAdjEntry($, listing)).find('table.datadisplaytable tr');
 }
 
-//Gets the HTML table adjacent to the entry, which contains the class description, information, etc
+/**
+ * @function getAdjEntry - Gets the next entry in the main table on the page
+ * @param {CheerioElement} $ - The document root
+ * @param {CheerioElement} listing - The listing for the section on the page
+ * @return {CheerioElement} - The next entry in the table
+ */
 async function getAdjEntry($, listing){
     try {
         return $(listing)
@@ -33,11 +47,16 @@ async function getAdjEntry($, listing){
             .parent()
             .next();
     } catch (error) {
-        console.log(`Error: ${error}`);
+        console.log(error);
     }
 }
 
-//Returns whether a section is open based on the available seats #
+/**
+ * @function isOpen - Returns whether a section is open based on the available seats #
+ * @param {CheerioElement} $ - The document root
+ * @param {CheerioElement} listing - The listing for the section on the page
+ * @return {boolean} - True if there are open seats, False otherwise
+ */
 async function isOpen($, listing){
     try {
         var td = (await getAdjEntry($, listing)).find('td.dddefault');
@@ -52,11 +71,15 @@ async function isOpen($, listing){
             .trim();
         return Number(seats) > 0;
     } catch (error) {
-        console.log(`Error: ${error}`);
+        console.log(error);
     }
 }
 
-//Cleans up the Instructor field string
+/**
+ * @function cleanInstructorString - Cleans up the Instructor field string, removing the (P) and excessive whitespace
+ * @param {string} str - The string containing the professor or TA's name
+ * @return {string} - A cleaned up string containing the professor or TA's name 
+ */
 async function cleanInstructorString(str){
     return str.replace(/\s+/g, ' ')
         .replace("(P)", '')
@@ -64,7 +87,12 @@ async function cleanInstructorString(str){
         .trim();
 }
 
-//Takes the array of time strings from the time column, and converts each to a 24 hour format number
+/**
+ * @function parseTime - Takes the string from the time column, 
+ * and converts it into a pair 24-hour based numbers, or -1 for both if the class has no set meeting time
+ * @param {string} timeString - The string in the time column of the table
+ * @return {[number, number]} - A tuple containing the start and end times for the class
+ */
 async function parseTime(timeString){
     try {
         if (timeString === "TBA"){
@@ -80,8 +108,12 @@ async function parseTime(timeString){
                 return time;
             });
     } catch (error) {
-        console.log(`Error: ${error}`);
+        console.log(error);
     }   
 }
 
-module.exports = {parseEntry, parseTime, cleanInstructorString, getAdjEntry, getTable, isOpen}
+/**
+ * @exports
+ * A library of parsing functions
+ */
+module.exports = {parseEntryTitle, parseTime, cleanInstructorString, getAdjEntry, getTable, isOpen}
