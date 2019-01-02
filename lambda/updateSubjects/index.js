@@ -61,19 +61,17 @@ async function parseSubjects(data){
  */
 async function writeItems(items){
     try {
-        var requests = [];
-        const pairs = items.entries();
-        for (let index = 0; index < items.size; index++) {
-            let [subjAbbrv, subjName] = pairs.next().value;
-            requests.push({
+        const pairs = Array.from(items.entries());
+        var requests = pairs.map(pair => {
+            return {
                 PutRequest: {
                     Item: {
-                        abbreviation: subjAbbrv,
-                        name: subjName
+                        abbreviation: pair[0],
+                        name: pair[1]
                     }
                 }
-            });   
-        }
+            }
+        });
 
         var totalOut = items.length;
 
