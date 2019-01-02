@@ -3,35 +3,39 @@ const aws = require('aws-sdk');
 const axios = require('axios');
 const doc_client = new aws.DynamoDB.DocumentClient();
 
-const URL = 'https://bulletin.temple.edu/courses/';
-const SELECTOR = 'a.sitemaplink';
-const TABLENAME = 'TUSM.SUBJECTS';
 const BATCHWRITE_MAX = 25;
 
-exports.handler = main;
-
-//FUNCTIONS
-
-//The main method of the program
-async function main(){ 
+/**
+ * @function Main - The entry point for the lambda function
+ * @param {object} event 
+ * @param {object} context - The AWS Lambda context object
+ * @param {function} callback - The function to be invoked once completed
+ */
+async function main(event, context, callback){ 
     try {
         console.log('Sending GET request...');
-        var response = await axios.get(URL);
+        var response = await axios.get(process.env.URL);
         var subjects = await parseSubjects(response.data);
         console.log(`${subjects.length} subjects found`);
         await writeItems(subjects);
         console.log('Complete');
+        callback(null, 'Success');
     } catch (error) {
-        console.log(`Error: ${error}`);
+        console.log(error);
+        callback(error);
     }  
 }
 
-//Extracts the subject abbreviations from the HTML
+/**
+ * @function parseSubjects - Extracts the subject abbreviations from the HTML
+ * @param {string} data - The HTML response
+ * @return {Map<string, string>} - The subjects extracted (abbreviation and name)
+ */
 async function parseSubjects(data){
     try {
         console.log('Loading response data into HTML...');
         var $ = cheerio.load(data);
-        var subjectList = $(SELECTOR);
+        var subjectList = $(process.env.SELECTOR);
         var subjects = new Map();
 
         console.log('Extracting subjects...');
@@ -47,11 +51,14 @@ async function parseSubjects(data){
 
         return subjects;
     } catch (error) {
-        console.log(`Error: ${error}`); 
+        console.log(error); 
     }
 }
 
-//Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
+/**
+ * @function writeItems - Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
+ * @param {Map<string, string>} items - Map of subjects (abbreviation and name) to write to the table
+ */
 async function writeItems(items){
     try {
         var requests = [];
@@ -77,7 +84,7 @@ async function writeItems(items){
                     : index + BATCHWRITE_MAX);
             var params = {
                 RequestItems: {
-                    [TABLENAME]: subset
+                    [process.env.SUBJECTS_TABLE]: subset
                 }
             };
 
@@ -95,6 +102,8 @@ async function writeItems(items){
         console.log(`Total items written to database: ${totalOut}`);
         console.log(`Total failed items: ${items.length - totalOut}`);
     } catch (error) {
-        console.log(`Error: ${error}`); 
+        console.log(error); 
     }
 }
+
+exports.handler = main;
