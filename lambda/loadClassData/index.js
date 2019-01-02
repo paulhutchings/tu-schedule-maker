@@ -1,22 +1,21 @@
-const aws = require('aws-sdk');
-const doc_client = new aws.DynamoDB.DocumentClient();
 const { Throttle, 
         QueueStream 
-    } = require('./modules/streams/streams');
+    } = require('./modules/streams');
 const RequestStream = require('./modules/streams/request');
 const ExtractStream = require('./modules/streams/data');
 const { DBPrepStream, 
         DatabaseWriteStream 
     } = require('./modules/streams/database');
 const {Readable} = require('stream');
+const aws = require('aws-sdk');
+const doc_client = new aws.DynamoDB.DocumentClient();
 
 /**
  * @function Main - The entry point for the lambda function
- * @param {object} event 
+ * @param {object} event - The event that invoked the lambda function, containing any event data, if applicable
  * @param {object} context - The AWS Lambda context object
- * @param {function} callback - The function to be invoked once completed
  */
-async function main(event, context, callback){
+async function main(event, context){
     try {
         //Read the subjects from the database
         console.log('Loading subjects...');
@@ -46,10 +45,10 @@ async function main(event, context, callback){
 
         await new Promise(resolve => DBWriteStream.on('finish', resolve));
         console.log('Complete');
-        callback(null, 'Success');
+        return 'Success';
     } catch (error){
         console.log(`Error: ${error}`);
-        callback(error);
+        return error;
     }
 }
 

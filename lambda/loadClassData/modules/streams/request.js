@@ -1,7 +1,7 @@
 const querystring = require('querystring');
 const process = require('process');
 const axios = require('axios');
-const {TransformAsync} = require('./streams');
+const {TransformAsync} = require('../streams');
 
 /**
  * @function sendPost - Sends a POST request for the provided subject to the server

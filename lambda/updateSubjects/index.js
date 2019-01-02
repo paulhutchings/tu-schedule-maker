@@ -7,11 +7,10 @@ const BATCHWRITE_MAX = 25;
 
 /**
  * @function Main - The entry point for the lambda function
- * @param {object} event 
+ * @param {object} event - The event that invoked the lambda function, containing any event data, if applicable
  * @param {object} context - The AWS Lambda context object
- * @param {function} callback - The function to be invoked once completed
  */
-async function main(event, context, callback){ 
+async function main(event, context){ 
     try {
         console.log('Sending GET request...');
         var response = await axios.get(process.env.URL);
@@ -19,10 +18,10 @@ async function main(event, context, callback){
         console.log(`${subjects.length} subjects found`);
         await writeItems(subjects);
         console.log('Complete');
-        callback(null, 'Success');
+        return 'Success';
     } catch (error) {
         console.log(error);
-        callback(error);
+        return error;
     }  
 }
 

@@ -8,7 +8,7 @@ const { parseEntryTitle,
         parseTime, 
         cleanInstructorString 
     } = require('../parse');
-const {TransformAsync} = require('./streams');
+const {TransformAsync} = require('../streams');
 
 /**
  * @function extractData - Extracts the courses and sections from the HTML response provided

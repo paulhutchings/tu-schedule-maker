@@ -1,4 +1,4 @@
-const {TransformAsync} = require('./streams');
+const {TransformAsync} = require('../streams');
 
 /**
  * @function prepItems - Breaks apart the array of courses and wraps each one in a PUT request
@@ -39,7 +39,7 @@ class DatabaseWriteStream extends AsyncTransform {
      * @param {AWS.DynamoDB.DocumentClient} dbObj - The DocumentClient object used to send the requests
      */
     constructor(tableName, dbObj){
-        super(this._task, {objectMode: true});
+        super({objectMode: true});
         this.tableName = tableName;
         this.db = dbObj;
         this.totalIn = 0;

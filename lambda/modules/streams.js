@@ -54,16 +54,36 @@ class Throttle extends Duplex {
 class TransformAsync extends Transform {
     /**
      * @constructor
-     * Creates a new instance of a TransformAsync stream with (optionally) the given options.
+     * Creates a new instance of a TransformAsync stream with (optionally) the given task function and stream options.
      * @param {function} task - The function to perform the actual transformation on the data
      * @param {object} options - Options to be passed to the super constructor (i.e. objectMode)
      */
     constructor(task, options){
-        super(options);
-        /** @member {[Promise]} pending - An queue holding all pending tasks on data that has entered the stream */
-        this.pending = [];
-        /** @member {function} _task - The function that performs the actual transformation on the data */
-        this._task = task;
+        if (arguments.length > 2){
+            throw new Error('Too many arguments');
+        }
+        else if (arguments.length === 2){
+            super(options);
+            /** @member {function} _task - The function that performs the actual 
+             * transformation on the data */
+            this._task = task;
+        }
+        else if (arguments.length === 1){
+            if (typeof arguments[0] === 'function'){
+                super();
+                this._task = task;
+            }
+            else if (typeof arguments[0] === 'object'){
+                super(options);
+            }
+            else throw new Error('Incorrect argument type. Argument needs to be a function or object');
+        }
+        else {
+            super();
+        }
+        /** @member {[Promise]} pending - An queue holding all pending tasks on data that 
+             * has entered the stream */
+            this.pending = [];      
     }
 
     /**
