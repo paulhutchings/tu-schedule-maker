@@ -2,5 +2,6 @@
 .vscode/
 
 lambda/test/
-lambda/updateSubjects/release/
-lambda/loadClassData/release/
+
+
+*.zip
