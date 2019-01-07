@@ -1,5 +1,3 @@
-const ClassTime = require('./classtime');
-
 /**
  * @class
  * Represents a section of a course. Contains a CRN (Course Registration Number), whether or not the section is
@@ -25,20 +23,26 @@ class Section {
      * @method onSameDay - Tests the current Section against another and determines whether 
      * they have any days in common
      * @param {Section} someSection - Another Section object to compare against
-     * @return {boolean} TRUE if the sections have any days in common, FALSE otherwise
+     * @return {boolean} True if the sections have any days in common, otherwise False
      */
     onSameDay(someSection){
         //Go through each ClassTime object, and see if they share any days
-        return this.classtimes.every(x => 
-            someSection.classtimes.every(y => 
-                x.onSameDay(y)));
+        this.classtimes.forEach(x => {
+            someSection.classtimes.forEach(y => {
+                if (x.onSameDay(y)){
+                    return true;
+                }
+            })
+        });
+
+        return false;
     }
 
     /**
      * @method hasTimeConflict - Tests the current Section against another and determines whether 
      * they have a time conflict
      * @param {Section} someSection - Another Section object to compare against
-     * @return {boolean} TRUE if the sections have a time conflict, FALSE otherwise
+     * @return {boolean} True if the sections have a time conflict, otherwise False
      */
     hasTimeConflict(someSection){
         //First test if any days are shared. If not, than no need to test the times
@@ -46,27 +50,16 @@ class Section {
             return false;
         }
 
-        /*Go through each ClassTime object. If any of them have a time conflict, than the section 
-        as a whole has a time conflict*/
-        return this.classtimes.every(x => 
-            someSection.classtimes.every(y => 
-                x.hasTimeConflict(y)));
-    }
+        //Go through each ClassTime object. If any of them have a time conflict, than the section as a whole has a time conflict
+        this.classtimes.forEach(x => {
+            someSection.classtimes.forEach(y => {
+                if (x.hasTimeConflict(y)){
+                    return true;
+                }
+            })
+        });
 
-    static parseSections(arr){
-        try {
-            return arr.map(obj => Section.parseSection(obj));
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    static parseSection(obj){
-        try {
-            return new Section(obj.crn, ClassTime.parseClassTimes(obj.classtimes), obj.isOpen);
-        } catch (error) {
-            console.log(error);
-        }
+        return false;
     }
 }
 

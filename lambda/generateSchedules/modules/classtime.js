@@ -32,14 +32,8 @@ class ClassTime {
      * @return {boolean} True if the classtimes have any days in common, otherwise False
      */
     onSameDay(someClass){
-        //null indicates an online class, so no conflicts
-        if (this.days === null || someClass.days === null){
-            return false;
-        }
-        else {
-            var combined = this.days + someClass.days; //Add all of the characters together
-            return (/(\w)\1+/gi).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
-        }
+        var combined = this.days + someClass.days; //Add all of the characters together
+        return (/([a-zA-Z]).*?\1/).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
     }
 
     /**
@@ -58,22 +52,6 @@ class ClassTime {
         var endConflict = this.endTime >= someClass.startTime && this.endTime <= someClass.endTime;
 
         return startConflict || endConflict;
-    }
-
-    static parseClassTimes(arr){
-        try {
-            return arr.map(obj => ClassTime.parseClassTime(obj));
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    static parseClassTime(obj){
-        try {
-            return new ClassTime(obj.days, obj.startTime, obj.endTime, obj.instructor, obj.location);
-        } catch (error) {
-            console.log(error);
-        }
     }
 }
 
