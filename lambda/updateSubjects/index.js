@@ -1,79 +1,111 @@
-const HTTPS = require('https');
-const CHEERIO = require('cheerio');
-const AWS = require('aws-sdk');
+const cheerio = require('cheerio');
+const aws = require('aws-sdk');
+const axios = require('axios');
+const doc_client = new aws.DynamoDB.DocumentClient();
 
-const DB = new AWS.DynamoDB.DocumentClient();
-const URL = 'https://bulletin.temple.edu/courses/';
-const SELECTOR = 'a.sitemaplink';
+const BATCHWRITE_MAX = 25;
 
+/**
+ * @function Main - The entry point for the lambda function
+ * @param {object} event - The event that invoked the lambda function, containing any event data, if applicable
+ * @param {object} context - The AWS Lambda context object
+ */
+async function main(event, context){ 
+    try {
+        console.log('Sending GET request...');
+        var response = await axios.get(process.env.URL);
+        var subjects = await parseSubjects(response.data);
+        console.log(`${subjects.length} subjects found`);
+        await writeItems(subjects);
+        console.log('Complete');
+        return 'Success';
+    } catch (error) {
+        console.log(error);
+        return error;
+    }  
+}
+
+/**
+ * @function parseSubjects - Extracts the subject abbreviations from the HTML
+ * @param {string} data - The HTML response
+ * @return {Map<string, string>} - The subjects extracted (abbreviation and name)
+ */
+async function parseSubjects(data){
+    try {
+        console.log('Loading response data into HTML...');
+        var $ = cheerio.load(data);
+        var subjectList = $(process.env.SELECTOR);
+        var subjects = new Map();
+
+
+        console.log('Extracting subjects...');
+        subjectList.each((i, element) => {
+            var entry = $(element).text();
+            const split = entry.lastIndexOf('(');
+            var abbrv = entry.slice(
+                    split + 1, 
+                    entry.length - 1);
+            var name = entry.slice(0, split);
+            subjects.set(abbrv, name);
+        });
+
+        return subjects;
+    } catch (error) {
+        console.log(error); 
+    }
+}
+
+
+/**
+ * @function writeItems - Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
+ * @param {Map<string, string>} items - Map of subjects (abbreviation and name) to write to the table
+ */
+async function writeItems(items){
+    try {
+        const pairs = Array.from(items.entries());
+        var requests = pairs.map(pair => {
+            return {
+                PutRequest: {
+                    Item: {
+                        abbreviation: pair[0],
+                        name: pair[1]
+                    }
+
+                }
+            }
+        });
+
+        var totalOut = items.length;
+
+        for (let index = 0; index < requests.length; index += BATCHWRITE_MAX) {
+            var subset = requests.slice(index, 
+                    (index + BATCHWRITE_MAX) > requests.length 
+                    ? requests.length 
+                    : index + BATCHWRITE_MAX);
+            var params = {
+                RequestItems: {
+                    [process.env.SUBJECTS_TABLE]: subset
+                }
+            };
+
+            var response = await doc_client.batchWrite(params).promise();     
+            var failedItems = Object.entries(response.UnprocessedItems).length;
+            if (failedItems > 0) {
+                totalOut -= failedItems;
+                console.log(`Failed items: ${failedItems}`);
+            } else {
+                console.log('BatchWrite succeeded');
+            }
+
+        } 
+        
+        console.log(`Total items received: ${items.length}`);
+        console.log(`Total items written to database: ${totalOut}`);
+        console.log(`Total failed items: ${items.length - totalOut}`);
+    } catch (error) {
+        console.log(error); 
+    }
+}
 
 exports.handler = main;
 
-//FUNCTIONS
-
-//The main function of the program
-function main(){ 
-    console.log('Sending GET request...');
-    HTTPS.get(URL, (res) => {
-        console.log(res.statusCode);
-        var body;
-        res.on('data', (chunk) => body += chunk);
-        res.on('end', () => {
-            var subjects = parseSubjects(body);
-            writeItems(subjects);       
-        });
-    }).on('error', (err) => console.log(err.message));
-}
-
-//Extracts the subject abbreviations from the HTML
-function parseSubjects(data){
-    console.log('Loading response data into HTML...');
-    var $ = CHEERIO.load(data);
-    var subjectList = $(SELECTOR);
-    var subjects = [];
-
-    console.log('Extracting subjects...');
-    subjectList.each((i, element) => {
-        var entry = $(element).text();
-        var subject = entry.slice(
-                entry.lastIndexOf('(') + 1, 
-                entry.length - 1);
-        subjects.push(subject);
-    });
-
-    return subjects;
-}
-
-//Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
-function writeItems(items){
-    console.log('Writing to database...');
-    var requests = items.map(item => {
-        return {
-            PutRequest: {
-                Item: {
-                    subject: item
-                }
-            }
-        };  
-    });
-
-    for (let index = 0; index < requests.length; index += 25) {
-        var subset = requests.slice(index, 
-                (index + 25) > requests.length 
-                ? requests.length 
-                : index + 25);
-        var params = {
-            RequestItems: {
-                'subjects-test': subset
-            }
-        };
-        
-        DB.batchWrite(params, (err, data) => {
-            if (err){
-                console.log(err);
-            } else {
-                console.log(`Failed items: ${Object.entries(data.UnprocessedItems).length}`);
-            }
-        });        
-    }  
-}

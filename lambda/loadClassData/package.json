@@ -1,6 +1,7 @@
 {
   "name": "loadClassData",
-  "version": "1.2.0",
+  "version": "1.8.0",
+
   "description": "",
   "main": "loadClassData.js",
   "scripts": {
@@ -10,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2"
   }
 }

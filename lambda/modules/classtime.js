@@ -1,21 +1,54 @@
+
+/**
+ * @class
+ * Represents a component of a course section (either a lecture or a lab/recitation).
+ */
 class ClassTime {
-    constructor(days, startTime, endTime, instructor, location, building){
+    /**
+     * @constructor
+     * Creates a new ClassTime instance.
+     * @param {string} days - A string containing the days of the week that the class takes place.
+     * Can contain any combination of the following or "TBA" or null: [MTWRF]
+     * @param {number} startTime - The start time of the class in a 24-hour format number (0-2400)
+     * @param {number} endTime - The end time of the class in a 24-hour format number (0-2400)
+     * @param {string} instructor - The name of the professor or TA for the component
+     * @param {string} location - The building and room where the class takes place
+     */
+    constructor(days, startTime, endTime, instructor, location){
         this.days = days;
         //Start and end times are stored as 24-hour time based numbers (0-2400) to allow easy comparison
         this.startTime = startTime;
         this.endTime = endTime;
         this.instructor = instructor;
         this.location = location;
-        this.building = building;
+        this.building = this.location === "TBA"
+            ? null
+            : location.slice(0, location.lastIndexOf(' '));
     }
 
-    //Tests the current Classtime instance against another and determines whether they have any days in common
+    /**
+     * @method onSameDay - Tests the current ClassTime against another and determines whether 
+     * they have any days in common
+     * @param {ClassTime} someClass - Another ClassTime object to compare against
+     * @return {boolean} True if the classtimes have any days in common, otherwise False
+     */
     onSameDay(someClass){
-        var combined = this.days + someClass.days; //Add all of the characters together
-        return (/([a-zA-Z]).*?\1/).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
+        //null indicates an online class, so no conflicts
+        if (this.days === null || someClass.days === null){
+            return false;
+        }
+        else {
+            var combined = this.days + someClass.days; //Add all of the characters together
+            return (/(\w)\1+/gi).test(combined); //Regex will match any duplicates, therefore the 2 classes share days
+        }
     }
 
-    //Tests the current Classtime instance against another and determines whether they have a time conflict
+    /**
+     * @method hasTimeConflict - Tests the current ClassTime against another and determines whether 
+     * they have a time conflict
+     * @param {ClassTime} someClass - Another ClassTime object to compare against
+     * @return {boolean} True if the classtimes have a time conflict, otherwise False
+     */
     hasTimeConflict(someClass){
         if (!this.onSameDay(someClass)){ //If both classes are not on the same day, we don't need to check the times
             return false;
@@ -27,6 +60,26 @@ class ClassTime {
 
         return startConflict || endConflict;
     }
+
+    static parseClassTimes(arr){
+        try {
+            return arr.map(obj => ClassTime.parseClassTime(obj));
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    static parseClassTime(obj){
+        try {
+            return new ClassTime(obj.days, obj.startTime, obj.endTime, obj.instructor, obj.location);
+        } catch (error) {
+            console.log(error);
+        }
+    }
 }
+
+/**
+ * @exports ClassTime
+ */
 
 module.exports = ClassTime;

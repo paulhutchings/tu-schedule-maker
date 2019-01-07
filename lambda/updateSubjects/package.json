@@ -1,6 +1,6 @@
 {
   "name": "updateSubjects",
-  "version": "1.4.0",
+  "version": "1.7.0",
   "description": "",
   "main": "updateSubjects.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2"
   }
 }
