@@ -41,3 +41,4 @@ class Section {
 }
 
 modules.export = Section;
+

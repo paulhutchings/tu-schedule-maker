@@ -1,6 +1,7 @@
 {
   "name": "loadClassData",
   "version": "1.8.0",
+
   "description": "",
   "main": "loadClassData.js",
   "scripts": {

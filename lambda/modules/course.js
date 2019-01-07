@@ -1,3 +1,4 @@
+
 const Section = require('./section');
 
 /**
@@ -49,4 +50,5 @@ class Course {
 /**
  * @exports Course
  */
+
 module.exports = Course;

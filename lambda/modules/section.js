@@ -1,3 +1,4 @@
+
 const ClassTime = require('./classtime');
 
 /**
@@ -73,4 +74,5 @@ class Section {
 /**
  * @exports Section
  */
+
 module.exports = Section;

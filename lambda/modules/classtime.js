@@ -1,3 +1,4 @@
+
 /**
  * @class
  * Represents a component of a course section (either a lecture or a lab/recitation).
@@ -80,4 +81,5 @@ class ClassTime {
 /**
  * @exports ClassTime
  */
+
 module.exports = ClassTime;

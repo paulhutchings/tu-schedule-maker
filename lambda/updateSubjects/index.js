@@ -37,6 +37,7 @@ async function parseSubjects(data){
         var subjectList = $(process.env.SELECTOR);
         var subjects = new Map();
 
+
         console.log('Extracting subjects...');
         subjectList.each((i, element) => {
             var entry = $(element).text();
@@ -54,6 +55,7 @@ async function parseSubjects(data){
     }
 }
 
+
 /**
  * @function writeItems - Wraps each item in a PUT request, then writes to the DynamoDB table in batches of 25
  * @param {Map<string, string>} items - Map of subjects (abbreviation and name) to write to the table
@@ -68,6 +70,7 @@ async function writeItems(items){
                         abbreviation: pair[0],
                         name: pair[1]
                     }
+
                 }
             }
         });
@@ -93,6 +96,7 @@ async function writeItems(items){
             } else {
                 console.log('BatchWrite succeeded');
             }
+
         } 
         
         console.log(`Total items received: ${items.length}`);
@@ -104,3 +108,4 @@ async function writeItems(items){
 }
 
 exports.handler = main;
+
