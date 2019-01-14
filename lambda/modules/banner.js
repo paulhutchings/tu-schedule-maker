@@ -33,6 +33,17 @@ class BannerAPI {
         }
     }
 
+    /**
+     * @method getClassSearchPage - Returns the HTML for the class search page for the given term
+     * @param {number} term - The numeric code for the desired semester. The codes follow the following pattern: 
+     * <year><suffix> where the suffixes are:
+     * Spring: 03
+     * Summer 1: 20
+     * Summer 2: 26
+     * Fall: 36
+     * Ex: Spring 2019 = 201903
+     * @returns {string} - The HTML of the response page
+     */
     async getClassSearchPage(term){
         if (!term){
             throw new Error('Error: must provide term');
