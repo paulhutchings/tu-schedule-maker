@@ -7,7 +7,7 @@ const { parseEntryTitle,
         isOpen, 
         parseTime, 
         cleanInstructorString 
-    } = require('../parse');
+    } = require('../../../modules/bannerAPI/banner-parse');
 const {TransformAsync} = require('../streams');
 
 /**

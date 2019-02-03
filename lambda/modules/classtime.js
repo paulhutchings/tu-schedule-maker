@@ -9,16 +9,14 @@ class ClassTime {
      * Creates a new ClassTime instance.
      * @param {string} days - A string containing the days of the week that the class takes place.
      * Can contain any combination of the following or "TBA" or null: [MTWRF]
-     * @param {number} startTime - The start time of the class in a 24-hour format number (0-2400)
-     * @param {number} endTime - The end time of the class in a 24-hour format number (0-2400)
+     * @param {[number, number]} times - A tuple containing the start and end times in a 24-hour number format (0-2400)
      * @param {string} instructor - The name of the professor or TA for the component
      * @param {string} location - The building and room where the class takes place
      */
-    constructor(days, startTime, endTime, instructor, location){
-        this.days = days;
+    constructor(days, times, instructor, location){
+        this.days = days === "" ? null: days;
         //Start and end times are stored as 24-hour time based numbers (0-2400) to allow easy comparison
-        this.startTime = startTime;
-        this.endTime = endTime;
+        [this.startTime, this.endTime] = times;
         this.instructor = instructor;
         this.location = location;
         this.building = this.location === "TBA"
@@ -81,5 +79,4 @@ class ClassTime {
 /**
  * @exports ClassTime
  */
-
 module.exports = ClassTime;

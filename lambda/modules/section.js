@@ -11,12 +11,16 @@ class Section {
     /**
      * @constructor
      * Creates a new Section
-     * @param {number} crn - The CRN (Course Registration Number) for the section
+     * @param {[number, string, string, number]} entryInfo - A tuple containing (in the folllowing order):
+     * - The CRN (course registration number) for the section
+     * - The course name (MATH 1041)
+     * - The course title (Calculus I)
+     * - The section number (1)
      * @param {[ClassTime]} classtimes - An array of ClassTime objects associated with the section
      * @param {boolean} isOpen - Whether or not the section has any open seats
      */
-    constructor(crn, classtimes, isOpen){
-        this.crn = crn;
+    constructor(entryInfo, classtimes, isOpen){
+        [this.crn, this.courseName, this.courseTitle, this.sectionNum] = entryInfo;
         this.classtimes = classtimes;
         this.hasLabRec = this.classtimes.length > 1 ? true : false;
         this.isOpen = isOpen;                  
@@ -74,5 +78,4 @@ class Section {
 /**
  * @exports Section
  */
-
 module.exports = Section;
