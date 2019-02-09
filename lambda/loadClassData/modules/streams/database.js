@@ -29,10 +29,10 @@ async function prepItems(data){
 
 /**
  * @class 
- * Takes an array of PUT requests, creates a bathWrite request with it, then sends the request to the given
+ * Takes an array of PUT requests, creates a batchWrite request with it, then sends the request to the given
  * DynamoDB table using the given DocumentClient
  */
-class DatabaseWriteStream extends AsyncTransform {
+class DatabaseWriteStream extends TransformAsync {
     /**
      * Creates a new instance of the DB WriteStream
      * @param {string} tableName - The name of the DynamoDB table to send the batchWrite requests to
@@ -53,14 +53,14 @@ class DatabaseWriteStream extends AsyncTransform {
      */
     async _task(items){
         this.totalIn += items.length;
+        const params = {
+            RequestItems: {
+                [this.tableName]: items
+            }
+        };
         try {
-            var params = {
-                RequestItems: {
-                    [this.tableName]: items
-                }
-            };
-            var response = await this.db.batchWrite(params).promise()
-            var failedItems = Object.entries(response.UnprocessedItems).length;
+            const response = await this.db.batchWrite(params).promise()
+            const failedItems = Object.entries(response.UnprocessedItems).length;
             if (failedItems > 0){
                 this.totalOut += items.length - failedItems;
                 console.log(`Failed items: ${failedItems}`);

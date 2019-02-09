@@ -1,7 +1,10 @@
-const cheerio = require('../../test/node_modules/cheerio');
+const cheerio = require('cheerio');
 const ClassTime = require('../classtime');
 const Section = require('../section');
 
+/**
+ * @class BannerParse - Parses the server response from BannerRequest into useful objects
+ */
 class BannerParse {
     constructor(){
     }
@@ -79,7 +82,8 @@ class BannerParse {
         return new Section(
             this._parseEntryTitle($(listing).text()), 
             this._getClassTimes($, listing), 
-            this._isOpen($, listing)
+            this._isOpen($, listing),
+            this._getCampus($, listing)
         );
     }
 
@@ -222,6 +226,26 @@ class BannerParse {
             .text()
             .trim();
         return Number(seats) > 0;
+    }
+
+    /**
+     * @private
+     * @method _getCampus - Extracts the campus from the listing info
+     * @param {CheerioStatic} $ 
+     * @param {CheerioElement} listing 
+     * @returns {string} - The campus where the section takes place
+     */
+    _getCampus($, listing){
+        return this._getAdjRow($, listing).find('td.dddefault')
+            .contents()
+            .filter(function(){
+                return this.type == 'text' &&
+                this.data.includes('Campus') &&
+                this.prev != null &&
+                this.prev.name == 'br';
+            })
+            .text()
+            .trim();                                       
     }
 
     /**

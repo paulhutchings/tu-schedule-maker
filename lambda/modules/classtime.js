@@ -58,22 +58,6 @@ class ClassTime {
 
         return startConflict || endConflict;
     }
-
-    static parseClassTimes(arr){
-        try {
-            return arr.map(obj => ClassTime.parseClassTime(obj));
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    static parseClassTime(obj){
-        try {
-            return new ClassTime(obj.days, obj.startTime, obj.endTime, obj.instructor, obj.location);
-        } catch (error) {
-            console.log(error);
-        }
-    }
 }
 
 /**

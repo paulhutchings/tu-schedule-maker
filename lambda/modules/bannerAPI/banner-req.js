@@ -1,4 +1,4 @@
-const axios = require('../../test/node_modules/axios');
+const axios = require('axios');
 const querystring = require('querystring');
 
 /**

@@ -18,12 +18,14 @@ class Section {
      * - The section number (1)
      * @param {[ClassTime]} classtimes - An array of ClassTime objects associated with the section
      * @param {boolean} isOpen - Whether or not the section has any open seats
+     * @param {string} campus - The campus where the section takes place
      */
-    constructor(entryInfo, classtimes, isOpen){
-        [this.crn, this.courseName, this.courseTitle, this.sectionNum] = entryInfo;
+    constructor(entryInfo, classtimes, isOpen, campus){
+        [this.crn, this.name, this.title, this.section] = entryInfo;
         this.classtimes = classtimes;
         this.hasLabRec = this.classtimes.length > 1 ? true : false;
-        this.isOpen = isOpen;                  
+        this.isOpen = isOpen;    
+        this.campus = campus;              
     }
 
     /**
@@ -56,22 +58,6 @@ class Section {
         return this.classtimes.every(x => 
             someSection.classtimes.every(y => 
                 x.hasTimeConflict(y)));
-    }
-
-    static parseSections(arr){
-        try {
-            return arr.map(obj => Section.parseSection(obj));
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    static parseSection(obj){
-        try {
-            return new Section(obj.crn, ClassTime.parseClassTimes(obj.classtimes), obj.isOpen);
-        } catch (error) {
-            console.log(error);
-        }
     }
 }
 

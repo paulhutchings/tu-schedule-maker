@@ -37,12 +37,12 @@ class BannerAPI {
      * @param {object} options 
      */
     _correctOptions(subjects, options){
-        subjects = typeof(subjects) === typeof(Array) ?
+        subjects = typeof subjects === 'object' ?
             subjects.map(s => s.toUpperCase()) :
             subjects.toUpperCase();
         ['campus', 'instructMethod', 'sessions', 'partOfTerm', 'division', 'attributes'].forEach(e => {
             if (options[e]) {
-                options[e] = typeof (options[e]) === typeof (Array) ?
+                options[e] = typeof options[e] === 'object' ?
                     options[e].map(e => e.toUpperCase()) :
                     options[e] = options[e].toUpperCase();
             }

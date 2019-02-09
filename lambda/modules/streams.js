@@ -3,6 +3,30 @@ const { Duplex,
     } = require('stream');
 
 /**
+ * @function streamify - "Streamifies" a function, allowing the ability to use standalone functions in transform streams
+ * @param {function} func - The function to "streamify". For async functions use streamifyAsync()
+ * @returns {function} A new function compatible for using in transform streams.
+ */
+function streamify(func) {
+    return function (chunk, encoding, callback) {
+        this.push(func(chunk));
+        callback();
+    }
+}
+
+/**
+ * @function streamifyAsync - Serves the same purpose as streamify(), but for async functions.
+ * @param {function} asyncFunc - Async function to "streamify". For syncronous functions, use streamify().
+ * @returns {function} An async function compatible for use in Async Transform streams.
+ */
+function streamifyAsync(asyncFunc) {
+    return async function (chunk, encoding, callback) {
+        this.push(await asyncFunc(chunk));
+        callback();
+    }
+}
+
+/**
  * @class
  * Throttles the stream by implementing a delay between writes. 
  */
@@ -54,32 +78,26 @@ class Throttle extends Duplex {
 class TransformAsync extends Transform {
     /**
      * @constructor
-     * Creates a new instance of a TransformAsync stream with (optionally) the given task function and stream options.
-     * @param {function} task - The function to perform the actual transformation on the data
+     * Creates a new instance of a TransformAsync stream with (optionally) the given stream options.
      * @param {object} options - Options to be passed to the super constructor (i.e. objectMode)
+     * The task function can also be passed to the constructor via the options argument
      */
-    constructor(task, options){
-        if (arguments.length > 2){
+    constructor(options){
+        if (arguments.length > 1){
             throw new Error('Too many arguments');
         }
-        else if (arguments.length === 2){
+        else if (options){
             super(options);
-            /** @member {function} _task - The function that performs the actual 
-             * transformation on the data */
-            this._task = task;
-        }
-        else if (arguments.length === 1){
-            if (typeof arguments[0] === 'function'){
-                super();
-                this._task = task;
+            if (options.task){
+                /** @member {function} _task - The function that performs the actual 
+                 * transformation on the data */
+                this._task = options.task;
             }
-            else if (typeof arguments[0] === 'object'){
-                super(options);
-            }
-            else throw new Error('Incorrect argument type. Argument needs to be a function or object');
+            else this._task = undefined;
         }
         else {
             super();
+            this._task = undefined;
         }
         /** @member {[Promise]} pending - An queue holding all pending tasks on data that 
              * has entered the stream */
@@ -109,18 +127,6 @@ class TransformAsync extends Transform {
         } catch (error) {
             console.log(`Error: ${error}`)
         } 
-    }
-
-    /**
-     * @method
-     * @abstract
-     * The task function performs the actual data processing/transformation, decoupling it from the transform function.
-     * This function should be overridden by subclasses, the default simply echoes back the chunk.
-     * @param {*} chunk - The chunk of data to be processed
-     * @return {*} - The new data that has been processed from the chunk.
-     */
-    async _task(chunk){
-        return chunk;
     }
 
     /**
@@ -179,10 +185,12 @@ class QueueStream extends Transform {
      * @param {function} callback - The callback function to be executed once all remaining items have been flushed
      */
     _flush(callback){
-        this.push(this.queue);
-        console.log(`Total number of courses queued: ${this.total}`);
+        if (this.queue.length > 0){
+            this.push(this.queue);
+        }  
+        console.log(`Total number of items queued: ${this.total}`);
         callback();
     }
 }
 
-module.exports = { Throttle, TransformAsync, QueueStream };
+module.exports = { streamify, streamifyAsync, Throttle, TransformAsync, QueueStream };
