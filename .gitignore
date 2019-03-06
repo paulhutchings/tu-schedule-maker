@@ -1,6 +1,9 @@
 .idea/
 .vscode/
-
+*.ps1
 *.zip
+*.env
+*.bat
+docs/
 
 lambda/test/

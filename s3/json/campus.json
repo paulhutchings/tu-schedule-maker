@@ -1,0 +1,146 @@
+[
+    {
+        "id": "AMB",
+        "name": "Ambler"
+    },
+    {
+        "id": "XLC",
+        "name": "Bucks CC at Log College"
+    },
+    {
+        "id": "CC",
+        "name": "Center City"
+    },
+    {
+        "id": "XCJ",
+        "name": "Central High School"
+    },
+    {
+        "id": "XDC",
+        "name": "Delaware County Community Coll"
+    },
+    {
+        "id": "XDE",
+        "name": "Desmond Conference Center"
+    },
+    {
+        "id": "FTW",
+        "name": "Fort Washington"
+    },
+    {
+        "id": "HAR",
+        "name": "Harrisburg"
+    },
+    {
+        "id": "HSC",
+        "name": "Health Sciences"
+    },
+    {
+        "id": "JPN",
+        "name": "Japan"
+    },
+    {
+        "id": "XLE",
+        "name": "Lehigh Carbon Comm College"
+    },
+    {
+        "id": "MN",
+        "name": "Main"
+    },
+    {
+        "id": "XMC",
+        "name": "Montgomery Co Community Col"
+    },
+    {
+        "id": "XNS",
+        "name": "Neshaminey School District"
+    },
+    {
+        "id": "XNC",
+        "name": "Northampton Community Coll"
+    },
+    {
+        "id": "XNB",
+        "name": "Northeast High School"
+    },
+    {
+        "id": "OFF",
+        "name": "Off Campus Sites"
+    },
+    {
+        "id": "ONL",
+        "name": "Online Learning"
+    },
+    {
+        "id": "XZZ",
+        "name": "Out Of The Area"
+    },
+    {
+        "id": "XQQ",
+        "name": "QA/RA - Amgen"
+    },
+    {
+        "id": "XQD",
+        "name": "QA/RA AstraZeneca, Delaware"
+    },
+    {
+        "id": "XQ5",
+        "name": "QA/RA Pharmacy - California"
+    },
+    {
+        "id": "XQC",
+        "name": "QA/RA Pharmacy - Connecticut"
+    },
+    {
+        "id": "XQB",
+        "name": "QA/RA Pharmacy - Massachusetts"
+    },
+    {
+        "id": "XQM",
+        "name": "QA/RA Pharmacy - Michigan"
+    },
+    {
+        "id": "XQS",
+        "name": "QA/RA Pharmacy - Missouri"
+    },
+    {
+        "id": "XQY",
+        "name": "QA/RA Pharmacy - New York"
+    },
+    {
+        "id": "XQO",
+        "name": "QA/RA Pharmacy - Ohio"
+    },
+    {
+        "id": "XQZ",
+        "name": "QA/RA Pharmacy - Other"
+    },
+    {
+        "id": "XQV",
+        "name": "QA/RA Pharmacy - Virginia"
+    },
+    {
+        "id": "XQ7",
+        "name": "QA/RA Pharmacy – Frazer, PA"
+    },
+    {
+        "id": "XQ6",
+        "name": "QA/RA Sanofi-Pasteur"
+    },
+    {
+        "id": "XRI",
+        "name": "Ridley School District"
+    },
+    {
+        "id": "ROM",
+        "name": "Rome"
+    },
+    {
+        "id": "XSJ",
+        "name": "St. Joseph's Univ AF ROTC"
+    },
+    {
+        "id": "XPN",
+        "name": "Univ Pennsylvania Naval ROTC"
+    }
+]

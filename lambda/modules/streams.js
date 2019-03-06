@@ -5,10 +5,18 @@ const { Duplex,
 /**
  * @function streamify - "Streamifies" a function, allowing the ability to use standalone functions in transform streams
  * @param {function} func - The function to "streamify". For async functions use streamifyAsync()
+ * @param {object} context - An optional context to invoke the function with. Used if the function is a class method that
+ * utilizes some resource member of the class
  * @returns {function} A new function compatible for using in transform streams.
  */
-function streamify(func) {
-    return function (chunk, encoding, callback) {
+function streamify(func, context) {
+    if (context){
+        return function (chunk, encoding, callback){
+            this.push(func.call(context, chunk));
+            callback();
+        }
+    }
+    else return function (chunk, encoding, callback) {
         this.push(func(chunk));
         callback();
     }
@@ -17,12 +25,18 @@ function streamify(func) {
 /**
  * @function streamifyAsync - Serves the same purpose as streamify(), but for async functions.
  * @param {function} asyncFunc - Async function to "streamify". For syncronous functions, use streamify().
+ * @param {object} context - An optional context to invoke the function with. Used if the function is a class method that
+ * utilizes some resource member of the class
  * @returns {function} An async function compatible for use in Async Transform streams.
  */
-function streamifyAsync(asyncFunc) {
-    return async function (chunk, encoding, callback) {
-        this.push(await asyncFunc(chunk));
-        callback();
+function streamifyAsync(asyncFunc, context) {
+    if (context){
+        return async function (chunk){
+            return asyncFunc.call(context, chunk);
+        }
+    }
+    else return async function (chunk) {
+        return asyncFunc(chunk);
     }
 }
 
@@ -89,8 +103,10 @@ class TransformAsync extends Transform {
         else if (options){
             super(options);
             if (options.task){
-                /** @member {function} _task - The function that performs the actual 
-                 * transformation on the data */
+                /** 
+                 * @member {function} _task - The function that performs the actual 
+                 * transformation on the data 
+                 */
                 this._task = options.task;
             }
             else this._task = undefined;
@@ -99,9 +115,11 @@ class TransformAsync extends Transform {
             super();
             this._task = undefined;
         }
-        /** @member {[Promise]} pending - An queue holding all pending tasks on data that 
-             * has entered the stream */
-            this.pending = [];      
+        /** 
+         * @member {[Promise]} pending - An queue holding all pending tasks on data that 
+         * has entered the stream 
+         */
+        this.pending = [];      
     }
 
     /**
@@ -163,14 +181,31 @@ class QueueStream extends Transform {
 
     /**
      * @method
-     * @implements - Adds the chunk to the queue, then pushes the items in the queue if it is full
+     * @implements - Adds a single item or array of items to the queue, then pushes the items in the queue if it is full
      * @param {*} chunk - The data to add to the queue
      * @param {*} encoding 
      * @param {function} callback - The callback function to be invoked when finished
      */
     _transform(chunk, encoding, callback){
-        this.total += 1;
-        this.queue.push(chunk);
+        //check if the item being passed is an array of non-zero size
+        if (typeof chunk === 'object' && chunk.length > 0){
+            this.total += chunk.length;
+            this.queue.concat(chunk);
+        }
+        else if (typeof chunk === 'object' && chunk.length === 0){
+            //empty array - do nothing
+        }
+        else { //otherwise this is a normal item
+            this.total += 1;
+            this.queue.push(chunk);
+        }
+
+        //check if the queue is full, and if we exceeded the queue size when adding an array, push the appropriate
+        //number of items downstream
+        while (this.queue.length > this.size){
+            this.push(this.queue.slice(0, this.size - 1));
+            this.queue = this.queue.slice(this.size);
+        }
         if (this.queue.length === this.size){
             this.push(this.queue);
             this.queue = [];
