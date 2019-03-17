@@ -1,0 +1,11 @@
+{
+	"Courses": [string], //ex "CIS 2168"
+	"Other": [Course],
+	"Days": string='MTWRF',
+	"NumDays": number=5,
+	"Start": number=0,
+	"End": number=2400,
+	"Campus": string='all', //should be campus ID(s) from JSON file from S3
+	"ProfsYes": [string]='all', //should be prof IDs from JSON file on S3
+	"ProfsNo": [string]='all'//same as above
+}
