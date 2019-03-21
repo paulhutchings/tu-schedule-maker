@@ -5,7 +5,7 @@ const AWS = require('aws-sdk');
 /**
  * @class DynamoDBProxy - A util/proxy class used to manage sending/receiving items to/from the database
  */
-class DynamoDBProxy {
+class DynamoDBUtil {
     /**
      * Creates a new instance of the DynamoDBProxy class
      * @param {string} tableName - The name of the DynamoDB table to work with
@@ -28,11 +28,11 @@ class DynamoDBProxy {
     }
 
     stats(){
-        console.log(`Total items received: ${this.totalIn}`);
-        console.log(`Total items written to database: ${this.totalWritten}`);
-        console.log(`Total items read: ${this.totalRead}`);
-        console.log(`Total failed items: ${this.totalFailed}`);
-        console.log(`Failure rate: ${this.failRate}`);
+        // console.log(`Total items received: ${this.totalIn}`);
+        // console.log(`Total items written to database: ${this.totalWritten}`);
+        // console.log(`Total items read: ${this.totalRead}`);
+        // console.log(`Total failed items: ${this.totalFailed}`);
+        // console.log(`Failure rate: ${this.failRate}`);
         return {
             'Input': this.totalIn,
             'Written': this.totalWritten,
@@ -65,6 +65,7 @@ class DynamoDBProxy {
             console.log(error);
         }
     }
+    
     async query(query){
 
     }
@@ -91,16 +92,25 @@ class DynamoDBProxy {
                     'name': item.name,
                     'section': item.section,
                     'classTimes': item.classtimes,
-                    'profs': item.classtimes.map(ct => ct.instructor),
-                    'days': item.classtimes.every(ct => ct.days !== null) ?
-                        item.classtimes.map(ct => ct.days)
-                            .join('') :
-                        null,
-                    'locations': item.classtimes.map(ct => ct.building),
-                    'maxTime': item.classtimes.map(ct => ct.endTime)
-                        .reduce((a, b) => Math.max(a, b)),
-                    'minTime': item.classtimes.map(ct => ct.startTime)
-                        .reduce((a, b) => Math.min(a, b)),
+                    'profs': item.classtimes.length > 1 ? 
+                                item.classtimes.map(ct => ct.instructor) 
+                                : null,
+                    'days': item.classtimes.length > 1 ? 
+                                item.classtimes.every(ct => ct.days !== null) ?
+                                    item.classtimes.map(ct => ct.days).join('') 
+                                    : null 
+                                : null,
+                    'locations': item.classtimes.length > 1 ?
+                                    item.classtimes.map(ct => ct.building)
+                                    : null,
+                    'maxTime': item.classtimes.length > 1 ?
+                                    item.classtimes.map(ct => ct.endTime)
+                                        .reduce((a, b) => Math.max(a, b))
+                                    : 2400,
+                    'minTime': item.classtimes.length > 1 ? 
+                                    item.classtimes.map(ct => ct.startTime)
+                                        .reduce((a, b) => Math.min(a, b))
+                                    : 0,
                     'isOpen': item.isOpen,
                     'campus': item.campus
                 }
@@ -140,7 +150,7 @@ class DynamoDBProxy {
     }
 }
 
-class S3Proxy {
+class S3Util {
     constructor(bucket, options={}){
         this.bucket = bucket;
         this.s3 = new AWS.S3(options);
@@ -154,7 +164,16 @@ class S3Proxy {
 
     }
 
-    read(file, bucket=this.bucket){
+    async read(file, bucket=this.bucket){
+        const params = {
+            'Bucket': bucket,
+            'Key': file
+        };
+        const response = await this.s3.getObject(params).promise();
+        return response.Body;
+    }
+
+    readstream(file, bucket=this.bucket){
         const params = {
             'Bucket': bucket,
             'Key': file
@@ -167,5 +186,5 @@ class S3Proxy {
  * @exports
  * 2 Util classes for working with S3 and DynamoDB
  */
-module.exports = {DynamoDBProxy, S3Proxy};
+module.exports = {DynamoDBUtil, S3Util};
 

@@ -11,7 +11,7 @@ class Section {
     /**
      * @constructor
      * Creates a new Section
-     * @param {[number, string, string, number]} entryInfo - A tuple containing (in the folllowing order):
+     * @param {[number, string, string, string]} entryInfo - A tuple containing (in the folllowing order):
      * - The CRN (course registration number) for the section
      * - The course name (MATH 1041)
      * - The course title (Calculus I)

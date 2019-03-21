@@ -1,39 +1,53 @@
-const BannerAPI = require('./modules/bannerAPI');
-const {S3Proxy, DynamoDBProxy} = require('./modules/aws-utils');
-const {streamify, streamifyAsync, TransformAsync, QueueStream, Throttle} = require('./modules/streams');
+const Banner = require('./modules/banner');
+const {S3Util, DynamoDBUtil} = require('./modules/aws-utils');
+const {TransformAsync, QueueStream, Throttle, streamify, streamifyAsync, ArrayStream} = require('./modules/streams');
 const {Transform} = require('stream');
-const process = require('process');
-
 const env = process.env;
-const db_options = {};
+
+const dbOptions = {};
 if (env.mode === 'test'){
-    db_options.endpoint = `${env.url}:${env.dynamo}`;
-    db_options.region = env.region;
+    dbOptions.endpoint = `${env.url}:${env.dynamo}`;
+    dbOptions.region = env.region;
 }
 
-var profs = s3.promise(s3.read('profs.json'));
-var campus = s3.promise(s3.read('campus.json'));
+//initialize aws objects
+const dynamo = new DynamoDBUtil(env.table, dbOptions);
+const s3 = new S3Util(env.bucket);
 
+const files = env.json.split(' ');
+var [campus, profs, subjects] = [s3.read(files[0]), s3.read(files[2]), s3.read(files[3])];
+
+const banner = new Banner({'term':env.term, 'campus': campus, 'profs': profs});
+
+//initialize streams
+const queue = new QueueStream();
+const throttle = new Throttle(env.delay);
+const prep = new Transform({objectMode: true, transform: streamify(dynamo.wrapSections, dynamo)});
+const write = new TransformAsync({objectMode: true, task: streamifyAsync(dynamo.batchWrite, dynamo)});
+const request = new TransformAsync({objectMode: true, task: streamifyAsync(banner.classSearch, banner)});
+
+const pr = require('process');
 async function main(event, context, callback){
-    const banner = new BannerAPI();
-    const db = new DynamoDBProxy(db_options);
-    const s3 = new S3Proxy(env.bucket);
-    const bannerReq = new TransformAsync({objectMode: true, task: streamifyAsync(banner.classSearch, banner)});
-    const queue = new QueueStream();
-    const throttle = new Throttle(10);
-    const prep = new Transform({objectMode: true, transform: streamify(db.wrapSections, db)});
-    const dbStream = new TransformAsync({objectMode: true, task: streamifyAsync(db.batchWrite, db)});
+    const start = pr.hrtime();
     try {
-        s3.stream(s3.read('subjects.json'))
-            .pipe(throttle)
-            .pipe(bannerReq)
+        const input = new ArrayStream(JSON.parse(await subjects).map(s => s.id));
+        input.pipe(throttle)
+            .pipe(request)
             .pipe(prep)
             .pipe(queue)
-            .pipe(dbStream);
+            .pipe(write);
     } catch (error) {
+        console.log(error);
         callback(error);
     }
+    // await new Promise(resolve => write.on('finish', resolve));
+    write.on('end', () => {
+        console.log(dynamo.stats());
+        const end = pr.hrtime(start);
+        console.log(end);
+    });  
+    callback('success');
 }
 
-main();
-// exports.handler = main;
+
+exports.handler = main;
