@@ -45,7 +45,7 @@ async function update(subject){
 
         while (wrapped.length > 0){
             //take up to 25 items at a time (will take whole array if less than 25)
-            pending.push(dynamo.batchWrite(wrapped.splice(index, 25))); 
+            pending.push(dynamo.batchWrite(wrapped.splice(0, 25))); 
         }       
     
         await Promise.all(pending);
