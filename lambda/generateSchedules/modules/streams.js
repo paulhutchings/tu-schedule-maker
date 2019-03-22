@@ -1,6 +1,45 @@
 const { Duplex, 
         Transform,
+        Readable
     } = require('stream');
+
+/**
+ * @function streamify - "Streamifies" a function, allowing the ability to use standalone functions in transform streams
+ * @param {function} func - The function to "streamify". For async functions use streamifyAsync()
+ * @param {object} context - An optional context to invoke the function with. Used if the function is a class method that
+ * utilizes some resource member of the class
+ * @returns {function} A new function compatible for using in transform streams.
+ */
+function streamify(func, context, args) {
+    if (context){
+        return function (chunk, encoding, callback){
+            this.push(func.call(context, chunk));
+            callback();
+        }
+    }
+    else return function (chunk, encoding, callback) {
+        this.push(func(chunk));
+        callback();
+    }
+}
+
+/**
+ * @function streamifyAsync - Serves the same purpose as streamify(), but for async functions.
+ * @param {function} asyncFunc - Async function to "streamify". For syncronous functions, use streamify().
+ * @param {object} context - An optional context to invoke the function with. Used if the function is a class method that
+ * utilizes some resource member of the class
+ * @returns {function} An async function compatible for use in Async Transform streams.
+ */
+function streamifyAsync(asyncFunc, context, args) {
+    if (context){
+        return async function (chunk){
+            return asyncFunc.call(context, chunk);
+        }
+    }
+    else return async function (chunk) {
+        return asyncFunc(chunk);
+    }
+}
 
 /**
  * @class
@@ -54,36 +93,34 @@ class Throttle extends Duplex {
 class TransformAsync extends Transform {
     /**
      * @constructor
-     * Creates a new instance of a TransformAsync stream with (optionally) the given task function and stream options.
-     * @param {function} task - The function to perform the actual transformation on the data
+     * Creates a new instance of a TransformAsync stream with (optionally) the given stream options.
      * @param {object} options - Options to be passed to the super constructor (i.e. objectMode)
+     * The task function can also be passed to the constructor via the options argument
      */
-    constructor(task, options){
-        if (arguments.length > 2){
+    constructor(options){
+        if (arguments.length > 1){
             throw new Error('Too many arguments');
         }
-        else if (arguments.length === 2){
+        else if (options){
             super(options);
-            /** @member {function} _task - The function that performs the actual 
-             * transformation on the data */
-            this._task = task;
-        }
-        else if (arguments.length === 1){
-            if (typeof arguments[0] === 'function'){
-                super();
-                this._task = task;
+            if (options.task){
+                /** 
+                 * @member {function} _task - The function that performs the actual 
+                 * transformation on the data 
+                 */
+                this._task = options.task;
             }
-            else if (typeof arguments[0] === 'object'){
-                super(options);
-            }
-            else throw new Error('Incorrect argument type. Argument needs to be a function or object');
+            else this._task = undefined;
         }
         else {
             super();
+            this._task = undefined;
         }
-        /** @member {[Promise]} pending - An queue holding all pending tasks on data that 
-             * has entered the stream */
-            this.pending = [];      
+        /** 
+         * @member {[Promise]} pending - An queue holding all pending tasks on data that 
+         * has entered the stream 
+         */
+        this.pending = [];      
     }
 
     /**
@@ -107,20 +144,8 @@ class TransformAsync extends Transform {
                 this.push(result);
             }                  
         } catch (error) {
-            console.log(`Error: ${error}`)
+            console.log(error)
         } 
-    }
-
-    /**
-     * @method
-     * @abstract
-     * The task function performs the actual data processing/transformation, decoupling it from the transform function.
-     * This function should be overridden by subclasses, the default simply echoes back the chunk.
-     * @param {*} chunk - The chunk of data to be processed
-     * @return {*} - The new data that has been processed from the chunk.
-     */
-    async _task(chunk){
-        return chunk;
     }
 
     /**
@@ -128,9 +153,10 @@ class TransformAsync extends Transform {
      * Called when there is no more data from the receiving stream. Waits until all of the tasks in the pending
      * queue have completed, before signalling END.
      */
-    async _final(){
+    async _final(callback){
         await Promise.all(this.pending);
         this.push(null);
+        callback();
     }
 }
 
@@ -157,19 +183,36 @@ class QueueStream extends Transform {
 
     /**
      * @method
-     * @implements - Adds the chunk to the queue, then pushes the items in the queue if it is full
+     * @implements - Adds a single item or array of items to the queue, then pushes the items in the queue if it is full
      * @param {*} chunk - The data to add to the queue
      * @param {*} encoding 
      * @param {function} callback - The callback function to be invoked when finished
      */
     _transform(chunk, encoding, callback){
-        this.total += 1;
-        this.queue.push(chunk);
+        //check if the item being passed is an array of non-zero size
+        if (typeof chunk === 'object' && chunk.length > 0){
+            this.total += chunk.length;
+            this.queue = this.queue.concat(chunk);
+        }
+        else if (typeof chunk === 'object' && chunk.length === 0){
+            //empty array - do nothing
+        }
+        else { //otherwise this is a normal item
+            this.total += 1;
+            this.queue.push(chunk);
+        }
+
+        //check if the queue is full, and if we exceeded the queue size when adding an array, push the appropriate
+        //number of items downstream
         if (this.queue.length === this.size){
             this.push(this.queue);
             this.queue = [];
         }
-
+        else while (this.queue.length > this.size){
+            this.push(this.queue.slice(0, this.size - 1));
+            this.queue = this.queue.slice(this.size);
+        }
+        
         callback();
     }
 
@@ -179,10 +222,35 @@ class QueueStream extends Transform {
      * @param {function} callback - The callback function to be executed once all remaining items have been flushed
      */
     _flush(callback){
-        this.push(this.queue);
-        console.log(`Total number of courses queued: ${this.total}`);
+        if (this.queue.length > 0){
+            this.push(this.queue);
+        }  
+        console.log(`Total number of items queued: ${this.total}`);
         callback();
     }
 }
 
-module.exports = { Throttle, TransformAsync, QueueStream };
+/**
+ * @class ArrayStream 
+ * Creates a readable stream from an array-like input
+ */
+class ArrayStream extends Readable {
+    constructor(array){
+        if (!array){
+            throw new Error('Must provide an array input source');
+        }
+        super({objectMode: true});
+        this.array = array;
+        this.index = 0;
+    }
+
+    _read(){
+        if(this.index < this.array.length){
+            this.push(this.array[this.index]);
+            this.index += 1;
+        }
+        else this.push(null);
+    }
+}
+
+module.exports = { streamify, streamifyAsync, Throttle, TransformAsync, QueueStream, ArrayStream };

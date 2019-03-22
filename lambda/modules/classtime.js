@@ -14,13 +14,13 @@ class ClassTime {
      * @param {string} location - The building and room where the class takes place
      */
     constructor(days, times, instructor, location){
-        this.days = days === "" ? null: days;
+        this.days = days === "" ? 'none': days;
         //Start and end times are stored as 24-hour time based numbers (0-2400) to allow easy comparison
         [this.startTime, this.endTime] = times;
         this.instructor = instructor;
         this.location = location;
         this.building = this.location === "TBA"
-            ? null
+            ? 'none'
             : location.slice(0, location.lastIndexOf(' '));
     }
 
@@ -32,7 +32,7 @@ class ClassTime {
      */
     onSameDay(someClass){
         //null indicates an online class, so no conflicts
-        if (this.days === null || someClass.days === null){
+        if (this.days === 'none' || someClass.days === 'none'){
             return false;
         }
         else {
