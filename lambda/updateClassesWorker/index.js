@@ -1,8 +1,9 @@
 /**
  * @description A worker Lambda that processes the classes within a single subject category
  */
-const {DynamoDBUtil} = require('./modules/aws-utils');
+const {DynamoDBUtil, S3Util} = require('./modules/aws-utils');
 const Banner = require('./modules/banner');
+const env = process.env;
 
 //Create the DynamoDB object if it doesn't exist from a previous invocation
 if (!dynamo){
@@ -64,7 +65,7 @@ async function init_banner(){
     try {
         //read JSON files from S3
         const s3 = new S3Util(env.bucket);
-        var [campus, profs] = [JSON.parse(await s3.read(env.campus)), JSON.parse(await s3.read(profs))];
+        var [campus, profs] = [JSON.parse(await s3.read(env.campus)), JSON.parse(await s3.read(env.profs))];
     } catch (error) {
         console.log(error);
         return null;

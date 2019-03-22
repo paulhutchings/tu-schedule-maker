@@ -11,8 +11,8 @@ class DynamoDBUtil {
      * @param {string} tableName - The name of the DynamoDB table to work with
      * @param {object} options - The options to provide the DynamoDB DocumentClient constructor
      */
-    constructor(tableName, options={}){
-        this.tableName = tableName;
+    constructor(options={}){
+        this.tableName = options.tableName;
         this.db = new AWS.DynamoDB.DocumentClient(options);
         this.totalIn = 0;
         this.totalWritten = 0;
