@@ -64,7 +64,7 @@ async function init_banner(){
     try {
         //read JSON files from S3
         const s3 = new S3Util(env.bucket);
-        var [campus, profs] = [JSON.parse(await s3.read(env.campusJSON)), JSON.parse(await s3.read(profsJSON))];
+        var [campus, profs] = [JSON.parse(await s3.read(env.campus)), JSON.parse(await s3.read(profs))];
     } catch (error) {
         console.log(error);
         return null;

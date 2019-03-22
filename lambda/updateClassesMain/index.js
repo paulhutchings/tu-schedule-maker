@@ -61,5 +61,5 @@ async function delegate(subject){
 async function load_subjects(){
     //initialize s3 and read subjects.JSON
     const s3 = new S3Util(env.bucket);
-    return JSON.parse(await s3.read(env.subjectsJSON));
+    return JSON.parse(await s3.read(env.subjects));
 }
