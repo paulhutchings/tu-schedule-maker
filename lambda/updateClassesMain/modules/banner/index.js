@@ -29,8 +29,7 @@ class Banner {
         let [term=null, timeout=30] = [options.term, options.timeout];
         this.req = new BannerReq(timeout);
         this.term = term;
-        let [campus=null, profs=null] = [options.campus, options.profs];
-        this.parse = new BannerParse({'campus': campus, 'profs': profs});
+        this.parse = new BannerParse();
     }  
 
     changeTerm(term){

@@ -10,9 +10,14 @@ if (!dynamo){
     var dynamo = init_db();
 }
 
-//Declare the banner object if it doesn't exist from a previous invocation
+//Create the banner object if it doesn't exist from a previous invocation
 if (!banner){
-    var banner = null; //Initialized in handler
+    var banner = init_banner();
+}
+
+//Check if JSON maps exist from previous invocation
+if (!maps){
+    var maps = null; //initialized in handler
 }
 
 /**
@@ -21,9 +26,13 @@ if (!banner){
 exports.handler = async(event) => {
     console.log(`Received ${event.subject}`);
     try {
-        //Initialize Banner object
-        if (!banner){
-            banner = await init_banner();
+        if (!maps){
+            //read JSON from S3
+            let s3 = new S3Util(env.bucket);
+            maps = {
+                campus: JSON.parse(await s3.read(env.campus)), 
+                profs: JSON.parse(await s3.read(env.profs))
+            };
         }
         return await update(event.subject);
     } catch (error) {
@@ -41,7 +50,7 @@ async function update(subject){
     try {
         const sections = await banner.classSearch(subject);
         console.log('Request complete');
-        const wrapped = dynamo.wrapSections(sections);
+        const wrapped = dynamo.wrapSections(sections, maps);
         let pending = [];       
 
         while (wrapped.length > 0){
@@ -50,31 +59,19 @@ async function update(subject){
         }       
     
         await Promise.all(pending);
-        return `Successfully updated sections for ${subject}`;  
+        console.log(`Successfully updated sections for ${subject}`);  
     } catch (error) {
-        return error;
+        console.log(error);
     }
 }
 
 /**
- * @async
  * @function init_banner - Initializes the Banner object
  * @returns {Banner}
  */
-async function init_banner(){
-    try {
-        //read JSON files from S3
-        const s3 = new S3Util(env.bucket);
-        var [campus, profs] = [JSON.parse(await s3.read(env.campus)), JSON.parse(await s3.read(env.profs))];
-    } catch (error) {
-        console.log(error);
-        return null;
-    }
-
+function init_banner(){
     //configure banner options
     const bannerOptions = {
-        'campus': campus,
-        'profs': profs,
         'term': env.term
     };
     return new Banner(bannerOptions);

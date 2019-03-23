@@ -10,10 +10,8 @@ class BannerParse {
      * @constructor
      * @param {object} options 
      */
-    constructor(options){
-        let [campus=null, profs=null] = [options.campus, options.profs];
-        this.campus = campus;
-        this.profs = profs;
+    constructor(){
+
     }
 
     /**
@@ -76,11 +74,7 @@ class BannerParse {
      * use. The other option is 'stream' to use the function as part of a stream.
      * @returns {[Section]} - An array of section objects for the classes returned from the server
      */
-     async classSearchParse(html){
-        if (!this.campus || !this.profs){
-            throw new Error('must provide a mapping of campus and professor IDs in order to parse ClassSearch');
-        }
-
+    classSearchParse(html){
         const $ = cheerio.load(html);
         const listings = $('table.datadisplaytable th.ddtitle a');
         try {
@@ -201,14 +195,14 @@ class BannerParse {
      * @return {[number, number]} - A tuple containing the start and end times for the class
      */
      _parseTime(timeString){
-        if (timeString === "TBA" || timeString === ''){
+        if (timeString === 'TBA' || timeString === ''){
             return [-1, -1];
         }
         else return timeString
             .split(' - ')
             .map(str => {
                 let time = Number(String(str).replace(/[apm:]/g,''));
-                if (String(str).includes("pm") && time < 1200) {
+                if (String(str).includes('pm') && time < 1200) {
                     time += 1200;
                 }
                 return time;
@@ -222,16 +216,10 @@ class BannerParse {
      * @return {string} - A cleaned up string containing the professor or TA's name 
      */
      _cleanInstrStr(str){
-        const name = str.replace(/\s+/g, ' ')
-            .replace("(P)", '')
+        return str.replace(/\s+/g, ' ')
+            .replace('(P)', '')
             .replace(/\s+,/g, ',')
             .trim();
-        const prof = this.profs.find(obj => name.split(' ')
-                                .every(n => obj.name.includes(n)));
-        if (prof){ //handles undefined case if a TA
-            return prof.id;
-        }
-        else return 'TA';
     }
 
     /**
@@ -263,7 +251,7 @@ class BannerParse {
      * @returns {string} - The campus where the section takes place
      */
      _getCampus($, listing){
-        const campus_str = this._getAdjRow($, listing).find('td.dddefault')
+        return this._getAdjRow($, listing).find('td.dddefault')
             .contents()
             .filter(function(){
                 return this.type == 'text' &&
@@ -272,13 +260,7 @@ class BannerParse {
                 this.prev.name == 'br';
             })
             .text()
-            .trim();    
-
-        const campus_obj = this.campus.find(obj => `${obj.name} Campus` === campus_str);
-        if (campus_obj){
-            return campus_obj.id;
-        }   
-        else return 'none';                     
+            .trim();                       
     }
 
     /**

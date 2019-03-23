@@ -84,8 +84,40 @@ class DynamoDBUtil {
         }
     }
 
-    wrapSection(item){
-        return {
+    /**
+     * 
+     * @param {string} prof The professors name to map
+     * @param {[{id, name}]} map A map of professor IDs to names
+     */
+    mapProf(prof, map){
+        let result = map.find(obj => prof.split(' ')
+                            .every(n => obj.name.includes(n)));
+
+        if (result) { //handles undefined case if a TA
+            return result.id;
+        }
+        else return 'TBA';
+    }
+
+    /**
+     * 
+     * @param {string} campus The campus name
+     * @param {[{id, name}]} map A map of campus IDs to names 
+     */
+    mapCampus(campus, map){
+        let result = map.find(obj => `${obj.name} Campus` === campus);
+        if (result){
+            return result.id;
+        }   
+        else return null;  
+    }
+
+    /**
+     * 
+     * @param {Section} item
+     */
+    wrapSection(item, maps){
+        let item = {
             'PutRequest': {
                 'Item': {
                     'crn': item.crn,
@@ -93,27 +125,30 @@ class DynamoDBUtil {
                     'name': item.name,
                     'section': item.section,
                     'classTimes': item.classtimes,
+                    'isOpen': item.isOpen,
+                    'campus': this.mapCampus(item.campus, maps.campus),
                     'profs': item.classtimes.length > 0 ? 
-                                item.classtimes.map(ct => ct.instructor) 
-                                : 'none',
+                                item.classtimes.map(ct => this.mapProf(ct.instructor, maps.profs)) 
+                                : null,
                     'days': item.classtimes.length > 0 ? 
-                                item.classtimes.every(ct => ct.days !== 'none') ?
-                                    item.classtimes.map(ct => ct.days).join('') 
-                                    : 'none' 
-                                : 'none',
+                                item.classtimes.every(ct => ct.days !== null) ?
+                                    item.classtimes.map(ct => ct.days)
+                                                    .join('')
+                                                    .replace(/(.)(?=.*\1)/g, "") //Remove duplicate letters
+                                                    .split('') //convert to array of characters
+                                    : null 
+                                : null,
                     'locations': item.classtimes.length > 0 ?
                                     item.classtimes.map(ct => ct.building)
-                                    : 'none',
-                    'maxTime': item.classtimes.length > 0 ?
+                                    : null,
+                    'start': item.classtimes.length > 0 ?
                                     item.classtimes.map(ct => ct.endTime)
-                                        .reduce((a, b) => Math.max(a, b))
+                                                    .reduce((a, b) => Math.max(a, b))
                                     : -1,
-                    'minTime': item.classtimes.length > 0 ? 
+                    'end': item.classtimes.length > 0 ? 
                                     item.classtimes.map(ct => ct.startTime)
-                                        .reduce((a, b) => Math.min(a, b))
-                                    : -1,
-                    'isOpen': item.isOpen,
-                    'campus': item.campus
+                                                    .reduce((a, b) => Math.min(a, b))
+                                    : -1
                 }
             }
         };

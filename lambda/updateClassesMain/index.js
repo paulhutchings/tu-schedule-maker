@@ -20,10 +20,12 @@ if (!subjects){
  */
 exports.handler = async(event) => {   
     try {
-        //Load list of subjects
         if (!subjects){
-            subjects = await load_subjects();
+            //read subjects.JSON
+            let s3 = new S3Util(env.bucket);
+            subjects = JSON.parse(await s3.read(env.subjects));
         }
+        console.log(`Read ${subjects.length} subjects`);
         let pending = subjects.map(subject => delegate(subject.id)); //will hold pending lambda invocations
         await Promise.all(pending);
         return 'Success';
@@ -47,19 +49,9 @@ async function delegate(subject){
     };
     try {
         //invoke worker lambda
+        console.log(`Invoking worker for ${subject}`);
         return await lambda.invoke(params).promise();
     } catch (error) {
         return error;
     }
-}
-
-/**
- * @async
- * @function load_subjects - Reads the subjects.json file from s3
- * @returns {[object]}
- */
-async function load_subjects(){
-    //initialize s3 and read subjects.JSON
-    const s3 = new S3Util(env.bucket);
-    return JSON.parse(await s3.read(env.subjects));
 }
