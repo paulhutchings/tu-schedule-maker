@@ -1,5 +1,6 @@
 const { Duplex, 
         Transform,
+        Readable
     } = require('stream');
 
 /**
@@ -9,7 +10,7 @@ const { Duplex,
  * utilizes some resource member of the class
  * @returns {function} A new function compatible for using in transform streams.
  */
-function streamify(func, context) {
+function streamify(func, context, args) {
     if (context){
         return function (chunk, encoding, callback){
             this.push(func.call(context, chunk));
@@ -29,7 +30,7 @@ function streamify(func, context) {
  * utilizes some resource member of the class
  * @returns {function} An async function compatible for use in Async Transform streams.
  */
-function streamifyAsync(asyncFunc, context) {
+function streamifyAsync(asyncFunc, context, args) {
     if (context){
         return async function (chunk){
             return asyncFunc.call(context, chunk);
@@ -143,7 +144,7 @@ class TransformAsync extends Transform {
                 this.push(result);
             }                  
         } catch (error) {
-            console.log(`Error: ${error}`)
+            console.log(error)
         } 
     }
 
@@ -152,9 +153,10 @@ class TransformAsync extends Transform {
      * Called when there is no more data from the receiving stream. Waits until all of the tasks in the pending
      * queue have completed, before signalling END.
      */
-    async _final(){
+    async _final(callback){
         await Promise.all(this.pending);
         this.push(null);
+        callback();
     }
 }
 
@@ -190,7 +192,7 @@ class QueueStream extends Transform {
         //check if the item being passed is an array of non-zero size
         if (typeof chunk === 'object' && chunk.length > 0){
             this.total += chunk.length;
-            this.queue.concat(chunk);
+            this.queue = this.queue.concat(chunk);
         }
         else if (typeof chunk === 'object' && chunk.length === 0){
             //empty array - do nothing
@@ -202,15 +204,15 @@ class QueueStream extends Transform {
 
         //check if the queue is full, and if we exceeded the queue size when adding an array, push the appropriate
         //number of items downstream
-        while (this.queue.length > this.size){
-            this.push(this.queue.slice(0, this.size - 1));
-            this.queue = this.queue.slice(this.size);
-        }
         if (this.queue.length === this.size){
             this.push(this.queue);
             this.queue = [];
         }
-
+        else while (this.queue.length > this.size){
+            this.push(this.queue.slice(0, this.size - 1));
+            this.queue = this.queue.slice(this.size);
+        }
+        
         callback();
     }
 
@@ -228,4 +230,27 @@ class QueueStream extends Transform {
     }
 }
 
-module.exports = { streamify, streamifyAsync, Throttle, TransformAsync, QueueStream };
+/**
+ * @class ArrayStream 
+ * Creates a readable stream from an array-like input
+ */
+class ArrayStream extends Readable {
+    constructor(array){
+        if (!array){
+            throw new Error('Must provide an array input source');
+        }
+        super({objectMode: true});
+        this.array = array;
+        this.index = 0;
+    }
+
+    _read(){
+        if(this.index < this.array.length){
+            this.push(this.array[this.index]);
+            this.index += 1;
+        }
+        else this.push(null);
+    }
+}
+
+module.exports = { streamify, streamifyAsync, Throttle, TransformAsync, QueueStream, ArrayStream };

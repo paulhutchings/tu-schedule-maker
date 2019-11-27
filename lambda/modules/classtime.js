@@ -8,7 +8,7 @@ class ClassTime {
      * @constructor
      * Creates a new ClassTime instance.
      * @param {string} days - A string containing the days of the week that the class takes place.
-     * Can contain any combination of the following or "TBA" or null: [MTWRF]
+     * Can contain any combination of the following or 'TBA' or null: [MTWRF]
      * @param {[number, number]} times - A tuple containing the start and end times in a 24-hour number format (0-2400)
      * @param {string} instructor - The name of the professor or TA for the component
      * @param {string} location - The building and room where the class takes place
@@ -19,8 +19,8 @@ class ClassTime {
         [this.startTime, this.endTime] = times;
         this.instructor = instructor;
         this.location = location;
-        this.building = this.location === "TBA"
-            ? null
+        this.building = this.location === 'TBA'
+            ? 'none'
             : location.slice(0, location.lastIndexOf(' '));
     }
 
@@ -32,7 +32,7 @@ class ClassTime {
      */
     onSameDay(someClass){
         //null indicates an online class, so no conflicts
-        if (this.days === null || someClass.days === null){
+        if (this.days === 'none' || someClass.days === 'none'){
             return false;
         }
         else {
