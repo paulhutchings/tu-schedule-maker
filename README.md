@@ -1,3 +1,5 @@
+Moved to https://github.com/schedulemaker
+
 # Temple University Schedule Maker
 TU Schedule-Maker is a web application designed with integration with <a href="https://aws.amazon.com/">Amazon Web Services</a> that allows Temple Univeristy students to create and visualize custom schedules using various options as outlined below. Users can input their desired classes either by name (ex: CIS 1068), or by title (ex: "Calculus I"), with assistance from an auto-complete dropdown menu. Once the user sets all of the desired options, the program calculates and displays the top 5 schedules in a weekly calendar format, so that he/she can easily view how their schedule would look.
 
