@@ -4,7 +4,7 @@
   "description": "Updates a classes within a single subject category",
   "main": "index.js",
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
     "cheerio": "^1.0.0-rc.2"
   },
   "devDependencies": {},
